@@ -567,7 +567,7 @@
     "stream": true
   }'`;
 
-      // 초기 라우팅 및 로컬스토리지 체크
+        // 초기 라우팅 및 로컬스토리지 체크
         checkAuthOnLoad();
       });
 
@@ -785,7 +785,10 @@
           const body = await res.json();
 
           if (body.success) {
-            const profile = getArcaProfile(body.data.arcaId, body.data.displayName);
+            const profile = getArcaProfile(
+              body.data.arcaId,
+              body.data.displayName,
+            );
             document.getElementById("dash-arcaid").innerHTML =
               `<a href="${profile.url}" target="_blank" style="color: var(--primary); text-decoration: none;">${profile.text}</a>`;
             document.getElementById("dash-quota").innerText =
@@ -963,9 +966,11 @@
                         <strong><a href="${profile.url}" target="_blank" style="color: var(--primary); text-decoration: none;">${profile.text}</a></strong><br>
                         남은 크레딧: ${u.credit_balance.toLocaleString()} | 상태: <b>${u.status}</b><br>
                         최근 사용: ${u.last_used_at ? new Date(u.last_used_at).toLocaleString() : "없음"}<br>
-                        ${u.status === "suspended" 
-                          ? `<button class="secondary-btn" style="padding: 5px 10px; font-size: 12px; width: auto; background-color: var(--success);" onclick="unsuspendUser('${u.arca_id}')">✅ 정지 해제</button>` 
-                          : `<button class="danger-btn" style="padding: 5px 10px; font-size: 12px; width: auto;" onclick="suspendUser('${u.arca_id}')">⚠️ 영구 정지</button>`}
+                        ${
+                          u.status === "suspended"
+                            ? `<button class="secondary-btn" style="padding: 5px 10px; font-size: 12px; width: auto; background-color: var(--success);" onclick="unsuspendUser('${u.arca_id}')">✅ 정지 해제</button>`
+                            : `<button class="danger-btn" style="padding: 5px 10px; font-size: 12px; width: auto;" onclick="suspendUser('${u.arca_id}')">⚠️ 영구 정지</button>`
+                        }
                     `;
               cont.appendChild(div);
             });
