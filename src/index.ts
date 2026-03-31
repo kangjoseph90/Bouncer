@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
+import { cors } from "hono/cors";
+
 import { authRoutes } from "./routes/auth";
 import { proxyRoutes } from "./routes/proxy";
 import { dashboardRoutes } from "./routes/dashboard";
@@ -8,6 +10,9 @@ import { initDB } from "./db/schema";
 import { config } from "./utils/config";
 
 const app = new Hono();
+
+// Global Middleware
+app.use("/*", cors());
 
 // 1. Database Initialization
 console.log("Initializing SQLite Database...");

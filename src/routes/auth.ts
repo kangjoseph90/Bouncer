@@ -19,8 +19,18 @@ export const authRoutes = new Hono();
 
 // ip 추출 헬퍼 함수
 function getClientIp(c: any): string {
+  // 1. Cloudflare 연결인 경우 가장 신뢰할 수 있음
+  const cfIp = c.req.header("cf-connecting-ip");
+  if (cfIp) return cfIp.trim();
+
+  // 2. 일반적인 X-Forwarded-For (항상 마지막에서 첫번째, 혹은 리버스 프록시가 보장하는 값을 써야 안전함)
+  const xff = c.req.header("x-forwarded-for");
+  if (xff) {
+    const ips = xff.split(",");
+    return ips[0].trim();
+  }
+
   return (
-    c.req.header("x-forwarded-for")?.split(",")[0].trim() ||
     c.req.header("x-real-ip") ||
     c.env?.incoming?.socket?.remoteAddress ||
     "unknown-ip"
