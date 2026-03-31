@@ -1,15 +1,18 @@
-import { BaseHandler, HandlerParams } from './base';
-import { OpenAIHandler } from './openai';
-import { AnthropicHandler } from './anthropic';
-import { GoogleHandler } from './google';
+import { BaseHandler, HandlerParams } from "./base";
+import { OpenAIHandler } from "./openai";
+import { AnthropicHandler } from "./anthropic";
+import { GoogleHandler } from "./google";
 
-export function getHandler(handlerType: string, params: HandlerParams): BaseHandler | null {
+export function getHandler(
+  handlerType: string,
+  params: HandlerParams,
+): BaseHandler | null {
   switch (handlerType.toLowerCase()) {
-    case 'openai':
+    case "openai":
       return new OpenAIHandler(params);
-    case 'anthropic':
+    case "anthropic":
       return new AnthropicHandler(params);
-    case 'google':
+    case "google":
       return new GoogleHandler(params);
     default:
       return null;
