@@ -1,0 +1,23 @@
+services:
+  bouncer:
+    build: .
+    container_name: bouncer-proxy
+    restart: always
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./bouncer.sqlite:/app/bouncer.sqlite
+      - ./models.json:/app/models.json
+      - ./public:/app/public
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: bouncer-tunnel
+    restart: always
+    command: tunnel --url http://bouncer:3000
+    depends_on:
+      - bouncer

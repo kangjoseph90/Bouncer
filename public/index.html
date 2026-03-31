@@ -567,9 +567,29 @@
     "stream": true
   }'`;
 
-        // 초기 라우팅 및 로컬스토리지 체크
+      // 초기 라우팅 및 로컬스토리지 체크
         checkAuthOnLoad();
       });
+
+      // 아카라이브 유저 정보 포맷팅 (표시 텍스트 및 프로필 URL)
+      function getArcaProfile(arcaId, displayName) {
+        if (!arcaId) return { text: "-", url: "#" };
+        if (arcaId.startsWith("fixed_")) {
+          const name = arcaId.replace("fixed_", "");
+          const finalName = displayName || name;
+          return {
+            text: `@${finalName}`,
+            url: `https://arca.live/u/@${encodeURIComponent(finalName)}`,
+          };
+        } else if (arcaId.startsWith("half_")) {
+          const num = arcaId.replace("half_", "");
+          return {
+            text: `@${displayName}#${num}`,
+            url: `https://arca.live/u/@${encodeURIComponent(displayName)}/${num}`,
+          };
+        }
+        return { text: arcaId, url: "#" };
+      }
 
       // 탭 네비게이션
       function navigate(tabId) {
@@ -765,7 +785,9 @@
           const body = await res.json();
 
           if (body.success) {
-            document.getElementById("dash-arcaid").innerText = body.data.arcaId;
+            const profile = getArcaProfile(body.data.arcaId, body.data.displayName);
+            document.getElementById("dash-arcaid").innerHTML =
+              `<a href="${profile.url}" target="_blank" style="color: var(--primary); text-decoration: none;">${profile.text}</a>`;
             document.getElementById("dash-quota").innerText =
               body.data.creditBalance.toLocaleString();
             document.getElementById("dash-status").innerText =
@@ -933,11 +955,12 @@
 
           if (body.success && body.data.length > 0) {
             body.data.forEach((u) => {
+              const profile = getArcaProfile(u.arca_id, u.display_name);
               const div = document.createElement("div");
               div.style =
                 "background: #eee; padding: 10px; border-radius: 6px; margin-bottom: 10px; text-align: left; font-size: 14px;";
               div.innerHTML = `
-                        <strong>${u.display_name}</strong> (@${u.arca_id})<br>
+                        <strong><a href="${profile.url}" target="_blank" style="color: var(--primary); text-decoration: none;">${profile.text}</a></strong><br>
                         남은 크레딧: ${u.credit_balance.toLocaleString()} | 상태: <b>${u.status}</b><br>
                         최근 사용: ${u.last_used_at ? new Date(u.last_used_at).toLocaleString() : "없음"}<br>
                         <button class="danger-btn" style="padding: 5px 10px; font-size: 12px; width: auto;" onclick="suspendUser('${u.arca_id}')">⚠️ 영구 정지</button>
