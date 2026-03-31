@@ -7,6 +7,10 @@ import { getHandler } from "../handlers/index";
 export const proxyRoutes = new Hono<{ Variables: { user: any } }>();
 
 proxyRoutes.use("/v1/*", async (c, next) => {
+  if (c.req.method === "OPTIONS") {
+    return await next();
+  }
+
   const authHeader = c.req.header("Authorization") || "";
   const tokenMatched = authHeader.match(/^Bearer\s+(bnc-[A-Za-z0-9]+)$/);
 

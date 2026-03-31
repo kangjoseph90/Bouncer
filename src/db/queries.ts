@@ -321,19 +321,38 @@ export function setSetting(key: string, value: string) {
 }
 
 // 8. 어드민: 유저 관리
-export function adminSearchUser(targetId: string) {
+export function adminSearchUser(query: string) {
   const db = getDB();
-  // id, arca_id, display_name 에 매치되는지 확인
+
+  // 1. @ 제거하여 실제 저장된 닉네임/ID와 매칭 (예: @nickname -> nickname)
+  const cleanQuery = query.startsWith("@") ? query.slice(1) : query;
+
+  // 2. # 태그 분리 처리 (예: nickname#123456 -> nickname 과 123456으로 분리)
+  let namePart = cleanQuery;
+  let idPart = cleanQuery;
+
+  if (cleanQuery.includes("#")) {
+    const parts = cleanQuery.split("#");
+    namePart = parts[0];
+    idPart = parts[1];
+  }
+
+  // 3. 닉네임(display_name) 또는 고유ID(arca_id) 중 하나라도 매칭되면 반환
+  // LIKE 연산 시 %를 붙여 부분 일치 검색
   return db
     .query(
       `
     SELECT arca_id, display_name, credit_balance, status, created_at, last_used_at
     FROM users 
-    WHERE arca_id LIKE $target OR display_name LIKE $target
-    LIMIT 10
+    WHERE display_name LIKE $name 
+       OR arca_id LIKE $id
+    LIMIT 15
   `,
     )
-    .all({ $target: `%${targetId}%` });
+    .all({
+      $name: `%${namePart}%`,
+      $id: `%${idPart}%`,
+    });
 }
 
 export function adminSuspendUser(arcaId: string) {
