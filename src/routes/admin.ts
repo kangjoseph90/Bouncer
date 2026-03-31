@@ -4,6 +4,7 @@ import {
   setSetting,
   adminSearchUser,
   adminSuspendUser,
+  adminUnsuspendUser,
 } from "../db/queries";
 import { config, loadModels } from "../utils/config";
 
@@ -116,6 +117,30 @@ adminRoutes.post("/users/:arcaId/suspend", (c) => {
   } catch (e) {
     return c.json(
       { success: false, error: "유저 차단 처리 중 에러가 발생했습니다." },
+      500,
+    );
+  }
+});
+
+// 6. 유저 관리: 정지 해제(Unsuspend)
+adminRoutes.post("/users/:arcaId/unsuspend", (c) => {
+  const arcaId = c.req.param("arcaId");
+  if (!arcaId) {
+    return c.json(
+      { success: false, error: "대상이 지정되지 않았습니다." },
+      400,
+    );
+  }
+
+  try {
+    adminUnsuspendUser(arcaId);
+    return c.json({
+      success: true,
+      message: `${arcaId} 유저의 정지가 해제되었습니다. 이제 유저가 직접 키를 다시 발급받을 수 있습니다.`,
+    });
+  } catch (e) {
+    return c.json(
+      { success: false, error: "정지 해제 처리 중 에러가 발생했습니다." },
       500,
     );
   }

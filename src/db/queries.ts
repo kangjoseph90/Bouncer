@@ -369,3 +369,18 @@ export function adminSuspendUser(arcaId: string) {
     $random_hash: "suspended-" + Date.now(),
   });
 }
+
+export function adminUnsuspendUser(arcaId: string) {
+  const db = getDB();
+  // 정지된 유저를 'revoked' 상태로 복구. 
+  // 키가 없는 상태이므로 revoked가 더 적절하며, 이후 유저가 인증을 통해 새 키를 발급받으면 active로 전환됨.
+  db.query(
+    `
+    UPDATE users 
+    SET status = 'revoked'
+    WHERE arca_id = $arca_id
+  `,
+  ).run({
+    $arca_id: arcaId,
+  });
+}
