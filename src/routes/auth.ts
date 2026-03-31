@@ -2,17 +2,18 @@ import { Hono } from 'hono';
 import { generateVerificationToken, isValidToken, consumeToken } from '../utils/token';
 import { findTokenInPost, validateProfileActivity } from '../services/crawler';
 import { config } from '../utils/config';
-import { getUserByArcaId, createUser, revokeAndReissue } from '../db/queries';
+import { getUserByArcaId, createUser, revokeAndReissue, getSetting } from '../db/queries';
 
 export const authRoutes = new Hono();
 
 // 1. 임시 토큰 발급
 authRoutes.get('/token', (c) => {
   const data = generateVerificationToken();
+  const currentPostUrl = getSetting('ARCA_POST_URL');
   return c.json({
     success: true,
     token: data.token,
-    postUrl: config.ARCA_POST_URL,
+    postUrl: currentPostUrl,
     expiresIn: data.expiresIn
   });
 });
@@ -30,15 +31,16 @@ authRoutes.post('/verify', async (c) => {
       return c.json({ success: false, error: '만료되었거나 유효하지 않은 토큰입니다.' }, 400);
     }
 
-    if (!config.ARCA_POST_URL) {
-      return c.json({ success: false, error: '서버에 ARCA_POST_URL이 설정되지 않았습니다.' }, 500);
+    const currentPostUrl = getSetting('ARCA_POST_URL');
+    if (!currentPostUrl) {
+      return c.json({ success: false, error: '서버에 ARCA_POST_URL(인증 게시글 위치)이 아직 설정되지 않았습니다. 관리자에게 문의하세요.' }, 500);
     }
 
     // 아카라이브 게시글 크롤링으로 토큰 찾기
     let profileData: { type: 'fixed' | 'half'; arcaId: string; displayName?: string } | null = null;
     
     try {
-       profileData = await findTokenInPost(config.ARCA_POST_URL, token);
+       profileData = await findTokenInPost(currentPostUrl, token);
     } catch(e: any) {
        return c.json({ success: false, error: e.message || '게시글 크롤링 중 오류' }, 500);
     }

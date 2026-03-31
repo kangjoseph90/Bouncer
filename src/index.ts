@@ -3,6 +3,7 @@ import { serveStatic } from 'hono/bun';
 import { authRoutes } from './routes/auth';
 import { proxyRoutes } from './routes/proxy';
 import { dashboardRoutes } from './routes/dashboard';
+import { adminRoutes } from './routes/admin';
 import { initDB } from './db/schema';
 import { config } from './utils/config';
 
@@ -18,6 +19,9 @@ app.use('/*', serveStatic({ root: './public' }));
 // 3. API Routing
 // 대시보드 및 상태 조회
 app.route('/api', dashboardRoutes);
+
+// 관리자 패널
+app.route('/api/admin', adminRoutes);
 
 // 인증 서버
 app.route('/api/auth', authRoutes);

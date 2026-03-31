@@ -221,3 +221,43 @@ export function getServerStats() {
     activeUsers: activeUsers?.count || 0
   };
 }
+
+// 7. 동적 설정(Settings) 입출력
+export function getSetting(key: string, defaultValue? : string): string {
+  const db = getDB();
+  const row = db.query(`SELECT value FROM settings WHERE key = $key`).get({ $key: key }) as { value: string } | undefined;
+  return row ? row.value : (defaultValue || '');
+}
+
+export function setSetting(key: string, value: string) {
+  const db = getDB();
+  db.query(`
+    INSERT INTO settings (key, value) VALUES ($key, $value)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+  `).run({ $key: key, $value: value });
+}
+
+// 8. 어드민: 유저 관리
+export function adminSearchUser(targetId: string) {
+  const db = getDB();
+  // id, arca_id, display_name 에 매치되는지 확인
+  return db.query(`
+    SELECT arca_id, display_name, credit_balance, status, created_at, last_used_at
+    FROM users 
+    WHERE arca_id LIKE $target OR display_name LIKE $target
+    LIMIT 10
+  `).all({ $target: `%${targetId}%` });
+}
+
+export function adminSuspendUser(arcaId: string) {
+  const db = getDB();
+  // suspended 처리 후 키 삭제(해시는 무작위로 날려서 무력화)
+  db.query(`
+    UPDATE users 
+    SET status = 'suspended', api_key_hash = $random_hash 
+    WHERE arca_id = $arca_id
+  `).run({
+    $arca_id: arcaId,
+    $random_hash: 'suspended-' + Date.now()
+  });
+}
