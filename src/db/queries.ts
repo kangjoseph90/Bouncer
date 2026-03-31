@@ -166,23 +166,34 @@ export function getUserByApiKey(rawApiKey: string) {
     | undefined;
 
   if (user && user.status === "active") {
-    checkAndRefillQuota(user.arca_id, user.last_refilled_at);
-    // 갱신되었을 수도 있으므로 최신 크레딧 잔액을 위해 다시 조회
-    return db
-      .query(
-        `
-      SELECT arca_id, display_name, credit_balance, status 
-      FROM users WHERE id = $id
-    `,
-      )
-      .get({ $id: user.id }) as any;
+    const refilled = checkAndRefillQuota(user.arca_id, user.last_refilled_at);
+    
+    // 갱신된 경우에만 최신 크레딧 잔액을 위해 다시 조회
+    if (refilled) {
+      return db
+        .query(
+          `
+        SELECT arca_id, display_name, credit_balance, status 
+        FROM users WHERE id = $id
+      `,
+        )
+        .get({ $id: user.id }) as any;
+    }
+
+    // 갱신되지 않은 경우 기존에 불러온 데이터를 필요한 필드만 남겨서 반환
+    return {
+      arca_id: user.arca_id,
+      display_name: user.display_name,
+      credit_balance: user.credit_balance,
+      status: user.status
+    };
   }
 
   return user;
 }
 
-function checkAndRefillQuota(arcaId: string, lastRefilledAt: number) {
-  if (config.USER_QUOTA_REFILL_MODE === "none") return;
+function checkAndRefillQuota(arcaId: string, lastRefilledAt: number): boolean {
+  if (config.USER_QUOTA_REFILL_MODE === "none") return false;
 
   const now = Date.now();
   const oneDayMs = 24 * 60 * 60 * 1000;
@@ -214,7 +225,9 @@ function checkAndRefillQuota(arcaId: string, lastRefilledAt: number) {
         $now: now,
         $arca_id: arcaId,
       });
+    return true;
   }
+  return false;
 }
 
 export function getUserByArcaId(arcaId: string) {

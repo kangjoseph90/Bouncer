@@ -1,6 +1,6 @@
 import { Hono, Next, Context } from "hono";
 import { getUserByApiKey, checkGlobalQuotaAllowed } from "../db/queries";
-import { checkRateLimits, recordRequestStart } from "../services/ratelimit";
+import { checkRateLimits, recordRequestStart, recordRequestEnd } from "../services/ratelimit";
 import { modelsRegistry, resolveModelConfig } from "../utils/config";
 import { getHandler } from "../handlers/index";
 
@@ -156,7 +156,8 @@ proxyRoutes.post("/v1/chat/completions", async (c) => {
   });
 
   if (!handlerInstance) {
-    // 핸들러가 없으면 락 해제 후 에러 반환 (임시 락 해제 모듈 필요하나 여기서는 단순화)
+    // 핸들러가 없으면 락 해제 후 에러 반환
+    recordRequestEnd(user.arca_id, modelId);
     return c.json(
       {
         error: {
