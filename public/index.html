@@ -1,297 +1,559 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bouncer - 아카라이브 AI 프록시</title>
     <style>
-        :root {
-            --primary: #4f5464;
-            --success: #28a745;
-            --bg: #f8f9fa;
-            --card: #ffffff;
-            --text: #333333;
-            --danger: #dc3545;
-            --border: #e9ecef;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-        
-        /* Navigation Bar */
-        nav {
-            background-color: var(--card);
-            width: 100%;
-            padding: 15px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: center;
-            margin-bottom: 40px;
-        }
-        .nav-links {
-            display: flex;
-            gap: 20px;
-            max-width: 600px;
-            width: 100%;
-            padding: 0 20px;
-        }
-        .nav-links a {
-            color: var(--text);
-            text-decoration: none;
-            font-weight: 500;
-            padding: 8px 12px;
-            border-radius: 6px;
-            transition: background 0.2s;
-            cursor: pointer;
-        }
-        .nav-links a:hover, .nav-links a.active {
-            background-color: var(--primary);
-            color: white;
-        }
+      :root {
+        --primary: #4f5464;
+        --success: #28a745;
+        --bg: #f8f9fa;
+        --card: #ffffff;
+        --text: #333333;
+        --danger: #dc3545;
+        --border: #e9ecef;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+      }
 
-        .container {
-            background-color: var(--card);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-            box-sizing: border-box;
-        }
-        header { margin-bottom: 30px; }
-        h1 { margin: 0 0 10px 0; color: var(--primary); }
-        h2 { color: var(--primary); margin-top: 0; }
-        h3 { margin: 0; color: #666; font-size: 14px; }
-        p { line-height: 1.5; color: #555; }
-        
-        button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 20px;
-            transition: opacity 0.2s;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        button:hover { opacity: 0.9; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .danger-btn { background-color: var(--danger); }
-        .secondary-btn { background-color: #6c757d; }
-        
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 16px;
-            margin-top: 10px;
-            box-sizing: border-box;
-        }
+      /* Navigation Bar */
+      nav {
+        background-color: var(--card);
+        width: 100%;
+        padding: 15px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        display: flex;
+        justify-content: center;
+        margin-bottom: 40px;
+      }
+      .nav-links {
+        display: flex;
+        gap: 20px;
+        max-width: 600px;
+        width: 100%;
+        padding: 0 20px;
+      }
+      .nav-links a {
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 500;
+        padding: 8px 12px;
+        border-radius: 6px;
+        transition: background 0.2s;
+        cursor: pointer;
+      }
+      .nav-links a:hover,
+      .nav-links a.active {
+        background-color: var(--primary);
+        color: white;
+      }
 
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            margin-top: 15px;
-            font-size: 14px;
-            color: #666;
-        }
-        .checkbox-group input { margin-right: 8px; cursor: pointer; }
+      .container {
+        background-color: var(--card);
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        max-width: 500px;
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+      }
+      header {
+        margin-bottom: 30px;
+      }
+      h1 {
+        margin: 0 0 10px 0;
+        color: var(--primary);
+      }
+      h2 {
+        color: var(--primary);
+        margin-top: 0;
+      }
+      h3 {
+        margin: 0;
+        color: #666;
+        font-size: 14px;
+      }
+      p {
+        line-height: 1.5;
+        color: #555;
+      }
 
-        .hidden { display: none !important; }
-        
-        .token-box {
-            background-color: var(--border);
-            padding: 20px;
-            border-radius: 8px;
-            font-size: 24px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            margin: 20px 0;
-            word-break: break-all;
-        }
-        .code-reveal {
-            background-color: #1e1e1e;
-            color: #4af626;
-            padding: 15px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 18px;
-            margin: 20px 0;
-            word-break: break-all;
-        }
-        
-        .warning-text { color: var(--danger); font-size: 14px; font-weight: bold; }
-        .success-text { color: var(--success); font-weight: bold; }
+      button {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: opacity 0.2s;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      button:hover {
+        opacity: 0.9;
+      }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      .danger-btn {
+        background-color: var(--danger);
+      }
+      .secondary-btn {
+        background-color: #6c757d;
+      }
 
-        /* Status & Docs Styles */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; margin-top: 20px; }
-        .stat-card { background: var(--bg); padding: 20px; border-radius: 8px; text-align: center; }
-        .stat-card p { margin: 10px 0 0 0; font-size: 24px; font-weight: bold; color: var(--primary); }
-        
-        pre { background: var(--bg); padding: 15px; border-radius: 6px; overflow-x: auto; text-align: left; font-size: 14px; }
-        .docs-section { text-align: left; margin-top: 30px; }
-        .docs-section h2 { margin-bottom: 10px; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
-        .docs-section ul { padding-left: 20px; color: #555; }
-        
+      input[type="text"],
+      input[type="password"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 16px;
+        margin-top: 10px;
+        box-sizing: border-box;
+      }
+
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        margin-top: 15px;
+        font-size: 14px;
+        color: #666;
+      }
+      .checkbox-group input {
+        margin-right: 8px;
+        cursor: pointer;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .token-box {
+        background-color: var(--border);
+        padding: 20px;
+        border-radius: 8px;
+        font-size: 24px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        margin: 20px 0;
+        word-break: break-all;
+      }
+      .code-reveal {
+        background-color: #1e1e1e;
+        color: #4af626;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 18px;
+        margin: 20px 0;
+        word-break: break-all;
+      }
+
+      .warning-text {
+        color: var(--danger);
+        font-size: 14px;
+        font-weight: bold;
+      }
+      .success-text {
+        color: var(--success);
+        font-weight: bold;
+      }
+
+      /* Status & Docs Styles */
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        text-align: left;
+        margin-top: 20px;
+      }
+      .stat-card {
+        background: var(--bg);
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+      }
+      .stat-card p {
+        margin: 10px 0 0 0;
+        font-size: 24px;
+        font-weight: bold;
+        color: var(--primary);
+      }
+
+      pre {
+        background: var(--bg);
+        padding: 15px;
+        border-radius: 6px;
+        overflow-x: auto;
+        text-align: left;
+        font-size: 14px;
+      }
+      .docs-section {
+        text-align: left;
+        margin-top: 30px;
+      }
+      .docs-section h2 {
+        margin-bottom: 10px;
+        font-size: 18px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 5px;
+      }
+      .docs-section ul {
+        padding-left: 20px;
+        color: #555;
+      }
     </style>
-</head>
-<body>
-
-<nav>
-    <div class="nav-links">
+  </head>
+  <body>
+    <nav>
+      <div class="nav-links">
         <a id="nav-issue" onclick="navigate('issue')" class="active">키 발급</a>
         <a id="nav-dashboard" onclick="navigate('dashboard')">대시보드</a>
         <a id="nav-status" onclick="navigate('status')">서버 상태</a>
         <a id="nav-docs" onclick="navigate('docs')">가이드</a>
-    </div>
-</nav>
+        <a id="nav-admin" onclick="navigate('admin')" style="color: #999"
+          >관리</a
+        >
+      </div>
+    </nav>
 
-<div class="container">
-    <header>
+    <div class="container">
+      <header>
         <h1>Bouncer</h1>
         <p>아카라이브 커뮤니티 전용 안전 프록시 서버</p>
-    </header>
+      </header>
 
-    <!-- TAB 1: 키 발급/재발급 -->
-    <div id="view-issue" class="view-section">
+      <!-- TAB 1: 키 발급/재발급 -->
+      <div id="view-issue" class="view-section">
         <!-- 인증 대기 -->
         <div id="state-auth">
-            <p>인증을 시작하려면 아래 버튼을 클릭하여 고유 토큰을 발급받으세요.</p>
-            <p style="font-size: 13px; color: #666;">이미 키를 가지고 계신가요? 상단의 <b>대시보드</b> 탭으로 이동하세요.</p>
-            <button id="btn-get-token" onclick="getToken()">인증 시작하기</button>
+          <div
+            id="setup-warning"
+            class="hidden"
+            style="
+              background: #fff3cd;
+              color: #856404;
+              padding: 15px;
+              border-radius: 8px;
+              margin-bottom: 20px;
+              border: 1px solid #ffeeba;
+            "
+          >
+            ⚠️ <strong>설정 미완료:</strong> 인증용 게시글 URL이 아직 설정되지
+            않았습니다. 관리자 설정을 기다려주세요.
+          </div>
+          <p>
+            인증을 시작하려면 아래 버튼을 클릭하여 고유 토큰을 발급받으세요.
+          </p>
+          <p style="font-size: 13px; color: #666">
+            이미 키를 가지고 계신가요? 상단의 <b>대시보드</b> 탭으로 이동하세요.
+          </p>
+          <button id="btn-get-token" onclick="getToken()">인증 시작하기</button>
 
-            <div id="token-display" class="hidden">
-                <p>아래 토큰을 복사하여 지정된 <a id="auth-link" href="#" target="_blank">아카라이브 글</a>에 <strong>로그인 한 상태</strong>로 댓글을 남겨주세요.</p>
-                <div class="token-box" id="token-text">로딩중...</div>
-                <p class="warning-text">※ 유동(ㅇㅇ)은 인증할 수 없습니다.<br>※ 활동 조건 미달 시 인증이 거부됩니다.</p>
-                <button id="btn-verify" onclick="verifyToken()">댓글 작성 완료 (인증 확인)</button>
-            </div>
+          <div id="token-display" class="hidden">
+            <p>
+              아래 토큰을 복사하여 지정된
+              <a id="auth-link" href="#" target="_blank">아카라이브 글</a>에
+              <strong>로그인 한 상태</strong>로 댓글을 남겨주세요.
+            </p>
+            <div class="token-box" id="token-text">로딩중...</div>
+            <p class="warning-text">
+              ※ 유동(ㅇㅇ)은 인증할 수 없습니다.<br />※ 활동 조건 미달 시 인증이
+              거부됩니다.
+            </p>
+            <button id="btn-verify" onclick="verifyToken()">
+              댓글 작성 완료 (인증 확인)
+            </button>
+          </div>
         </div>
 
         <!-- 새 키 발급 완료 -->
         <div id="state-success" class="hidden">
-            <h2 class="success-text">발급 완료!</h2>
-            <p class="warning-text">⚠️ 이 창을 닫으면 API 키를 다시 볼 수 없습니다!<br>복사하여 클라이언트에 안전하게 등록하세요.</p>
-            <div class="code-reveal" id="new-api-key"></div>
-            <button onclick="saveAndGoDashboard()">대시보드로 이동</button>
+          <h2 class="success-text">발급 완료!</h2>
+          <p class="warning-text">
+            ⚠️ 이 창을 닫으면 API 키를 다시 볼 수 없습니다!<br />복사하여
+            클라이언트에 안전하게 등록하세요.
+          </p>
+          <div class="code-reveal" id="new-api-key"></div>
+          <button onclick="saveAndGoDashboard()">대시보드로 이동</button>
         </div>
-    </div>
+      </div>
 
-    <!-- TAB 2: 대시보드 -->
-    <div id="view-dashboard" class="view-section hidden">
-        
+      <!-- TAB 2: 대시보드 -->
+      <div id="view-dashboard" class="view-section hidden">
         <!-- API 키 입력 폼 -->
         <div id="dash-login">
-            <h2>대시보드 로그인</h2>
-            <p>발급받은 API 키를 입력하여 잔여 크레딧을 확인하세요.</p>
-            <input type="password" id="login-api-key" placeholder="bnc-..." autocomplete="off">
-            <div class="checkbox-group">
-                <input type="checkbox" id="check-remember" checked>
-                <label for="check-remember">현재 브라우저에 키 보관 (로그인 유지)</label>
-            </div>
-            <button onclick="loginDashboard()">조회하기</button>
+          <h2>대시보드 로그인</h2>
+          <p>발급받은 API 키를 입력하여 잔여 크레딧을 확인하세요.</p>
+          <input
+            type="password"
+            id="login-api-key"
+            placeholder="bnc-..."
+            autocomplete="off"
+          />
+          <div class="checkbox-group">
+            <input type="checkbox" id="check-remember" checked />
+            <label for="check-remember"
+              >현재 브라우저에 키 보관 (로그인 유지)</label
+            >
+          </div>
+          <button onclick="loginDashboard()">조회하기</button>
         </div>
 
         <!-- 로그인 된 대시보드 화면 -->
         <div id="dash-stats" class="hidden">
-            <h2 class="success-text">인증되었습니다</h2>
-            <p style="font-size: 18px; margin-top: 20px;">계정 ID: <strong id="dash-arcaid"></strong></p>
-            
-            <div class="grid" style="margin-bottom: 30px;">
-                <div class="stat-card">
-                    <h3>남은 크레딧(쿼터)</h3>
-                    <p id="dash-quota" style="color: var(--success);">-</p>
-                </div>
-                <div class="stat-card">
-                    <h3>현재 상태</h3>
-                    <p id="dash-status">-</p>
-                </div>
-            </div>
+          <h2 class="success-text">인증되었습니다</h2>
+          <p style="font-size: 18px; margin-top: 20px">
+            계정 ID: <strong id="dash-arcaid"></strong>
+          </p>
 
-            <div style="text-align: left; padding: 15px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 6px; margin-bottom: 20px;">
-                <p style="margin: 0; font-size: 14px; color: #856404;">
-                    <strong>보안 안내:</strong> API 키가 노출되었다면 즉시 아래의 파기 버튼을 누르고 재발급을 받으세요.
-                </p>
+          <div class="grid" style="margin-bottom: 30px">
+            <div class="stat-card">
+              <h3>남은 크레딧(쿼터)</h3>
+              <p id="dash-quota" style="color: var(--success)">-</p>
             </div>
+            <div class="stat-card">
+              <h3>현재 상태</h3>
+              <p id="dash-status">-</p>
+            </div>
+          </div>
 
-            <button class="secondary-btn" style="margin-bottom: 10px;" onclick="logoutDashboard()">로그아웃 (브라우저에서 키 지우기)</button>
-            <button class="danger-btn" onclick="revokeCurrentKey()">🚨 API 키 영구 파기</button>
+          <div
+            style="
+              text-align: left;
+              padding: 15px;
+              background: #fff3cd;
+              border: 1px solid #ffeeba;
+              border-radius: 6px;
+              margin-bottom: 20px;
+            "
+          >
+            <p style="margin: 0; font-size: 14px; color: #856404">
+              <strong>보안 안내:</strong> API 키가 노출되었다면 즉시 아래의 파기
+              버튼을 누르고 재발급을 받으세요.
+            </p>
+          </div>
+
+          <button
+            class="secondary-btn"
+            style="margin-bottom: 10px"
+            onclick="logoutDashboard()"
+          >
+            로그아웃 (브라우저에서 키 지우기)
+          </button>
+          <button class="danger-btn" onclick="revokeCurrentKey()">
+            🚨 API 키 영구 파기
+          </button>
         </div>
-    </div>
+      </div>
 
-    <!-- TAB 3: 서버 상태 -->
-    <div id="view-status" class="view-section hidden">
+      <!-- TAB 3: 서버 상태 -->
+      <div id="view-status" class="view-section hidden">
         <h2>서버 실시간 상태</h2>
         <div class="grid">
-            <div class="stat-card">
-                <h3>등록된 총 유저 수</h3>
-                <p id="totalUsers">-</p>
-            </div>
-            <div class="stat-card">
-                <h3>최근 24시간 활성 유저</h3>
-                <p id="activeUsers">-</p>
-            </div>
-            <div class="stat-card" style="grid-column: span 2;">
-                <h3>서버 작동 상태</h3>
-                <p id="serverStatus" style="color: var(--success);">-</p>
-            </div>
+          <div class="stat-card">
+            <h3>등록된 총 유저 수</h3>
+            <p id="totalUsers">-</p>
+          </div>
+          <div class="stat-card">
+            <h3>최근 24시간 활성 유저</h3>
+            <p id="activeUsers">-</p>
+          </div>
+          <div class="stat-card" style="grid-column: span 2">
+            <h3>서버 작동 상태</h3>
+            <p id="serverStatus" style="color: var(--success)">-</p>
+          </div>
         </div>
-        <button class="secondary-btn" onclick="fetchStatus()">상태 새로고침</button>
-    </div>
+        <button class="secondary-btn" onclick="fetchStatus()">
+          상태 새로고침
+        </button>
+      </div>
 
-    <!-- TAB 4: 가이드 (Docs) -->
-    <div id="view-docs" class="view-section hidden">
+      <!-- TAB 4: 가이드 (Docs) -->
+      <div id="view-docs" class="view-section hidden">
         <h2>API 연동 문서</h2>
-        <p style="text-align: left;">Bouncer는 OpenAI API 규격을 100% 호환하므로 기존 AI 클라이언트에 바로 적용 가능합니다.</p>
+        <p style="text-align: left">
+          Bouncer는 OpenAI API 규격을 100% 호환하므로 기존 AI 클라이언트에 바로
+          적용 가능합니다.
+        </p>
 
         <div class="docs-section">
-            <h2>1. 기본 설정</h2>
-            <ul>
-                <li><strong>Base URL:</strong> <code id="display-base-url" style="background:#eee;padding:2px 6px;border-radius:4px;">https://.../v1</code></li>
-                <li><strong>API Key:</strong> 인증 페이지에서 발급받은 <code>bnc-...</code> 키</li>
-            </ul>
+          <h2>1. 기본 설정</h2>
+          <ul>
+            <li>
+              <strong>Base URL:</strong>
+              <code
+                id="display-base-url"
+                style="background: #eee; padding: 2px 6px; border-radius: 4px"
+                >https://.../v1</code
+              >
+            </li>
+            <li>
+              <strong>API Key:</strong> 인증 페이지에서 발급받은
+              <code>bnc-...</code> 키
+            </li>
+          </ul>
         </div>
 
         <div class="docs-section">
-            <h2>2. Curl 테스트 예시</h2>
-            <pre><code id="curl-example">코드를 불러오는 중...</code></pre>
+          <h2>2. Curl 테스트 예시</h2>
+          <pre><code id="curl-example">코드를 불러오는 중...</code></pre>
         </div>
 
         <div class="docs-section">
-            <h2>3. 주의사항</h2>
-            <ul>
-                <li>할당량 소진 시 429 에러가 발생합니다. 본인 잔여량은 대시보드 탭에서 확인하세요.</li>
-                <li>API 키를 타인과 공유하지 마세요.</li>
-            </ul>
+          <h2>3. 주의사항</h2>
+          <ul>
+            <li>
+              할당량 소진 시 429 에러가 발생합니다. 본인 잔여량은 대시보드
+              탭에서 확인하세요.
+            </li>
+            <li>API 키를 타인과 공유하지 마세요.</li>
+          </ul>
         </div>
+      </div>
+
+      <!-- TAB 5: 관리자 (Admin) -->
+      <div id="view-admin" class="view-section hidden">
+        <div id="admin-login">
+          <h2 style="margin-top: 0">관리자 로그인</h2>
+          <p style="font-size: 14px; color: #666">
+            환경변수에 기입된 <code>ADMIN_PASSWORD</code>가 필요합니다.
+          </p>
+          <input
+            type="password"
+            id="admin-pw"
+            placeholder="Admin Secret"
+            autocomplete="off"
+          />
+          <button onclick="loginAdmin()">로그인</button>
+        </div>
+
+        <div id="admin-dashboard" class="hidden">
+          <h2
+            class="warning-text"
+            style="color: var(--danger); margin-bottom: 25px"
+          >
+            🛡️ 관리자 관제 패널
+          </h2>
+
+          <div class="docs-section">
+            <h2>1. 시스템 동적 설정</h2>
+            <div
+              style="
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 8px;
+                border: 1px solid #ddd;
+                margin-bottom: 20px;
+              "
+            >
+              <p style="font-size: 14px; margin-top: 0; font-weight: bold">
+                인증용 아카라이브 게시글 URL
+              </p>
+              <div style="display: flex; gap: 8px">
+                <input
+                  type="text"
+                  id="admin-post-url"
+                  placeholder="https://arca.live/b/..."
+                  style="margin-top: 0; flex: 1; padding: 10px"
+                />
+                <button
+                  style="
+                    margin-top: 0;
+                    width: 70px;
+                    padding: 10px;
+                    font-size: 14px;
+                  "
+                  onclick="updatePostUrl()"
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+
+            <button
+              class="secondary-btn"
+              style="width: 100%; padding: 15px; background: var(--primary)"
+              onclick="reloadModels()"
+            >
+              🔄 models.json 강제 리로드 (엔진 갱신)
+            </button>
+          </div>
+
+          <div class="docs-section" style="margin-top: 30px">
+            <h2>2. 악성 유저 및 보안 관리</h2>
+            <div style="display: flex; gap: 8px">
+              <input
+                type="text"
+                id="admin-search-q"
+                placeholder="닉네임 혹은 ARCA 고유 ID"
+                style="margin-top: 0; flex: 1; padding: 10px"
+              />
+              <button
+                style="
+                  margin-top: 0;
+                  width: 70px;
+                  padding: 10px;
+                  font-size: 14px;
+                "
+                onclick="searchUser()"
+              >
+                조회
+              </button>
+            </div>
+            <div
+              id="admin-user-results"
+              style="
+                margin-top: 15px;
+                max-height: 250px;
+                overflow-y: auto;
+                border: 1px dashed #ccc;
+                padding: 10px;
+                border-radius: 5px;
+              "
+            ></div>
+          </div>
+
+          <button
+            class="secondary-btn"
+            style="margin-top: 40px; background-color: #6c757d"
+            onclick="logoutAdmin()"
+          >
+            패널 로그아웃
+          </button>
+        </div>
+      </div>
     </div>
 
-</div>
+    <script>
+      const API_KEY_STORAGE = "bouncer_api_key";
+      let currentTempToken = "";
+      let currentApiKey = "";
 
-<script>
-    const API_KEY_STORAGE = 'bouncer_api_key';
-    let currentTempToken = '';
-    let currentApiKey = '';
-
-    // URL 표시 설정
-    document.addEventListener("DOMContentLoaded", () => {
+      // URL 표시 설정
+      document.addEventListener("DOMContentLoaded", () => {
         const origin = window.location.origin;
-        document.getElementById('display-base-url').innerText = `${origin}/v1`;
-        document.getElementById('curl-example').innerText = `curl -X POST ${origin}/v1/chat/completions \\
+        document.getElementById("display-base-url").innerText = `${origin}/v1`;
+        document.getElementById("curl-example").innerText =
+          `curl -X POST ${origin}/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer bnc-당신의키" \\
   -d '{
@@ -299,205 +561,385 @@
     "messages": [{"role": "user", "content": "안녕하세요!"}],
     "stream": true
   }'`;
-        
+
         // 초기 라우팅 및 로컬스토리지 체크
         checkAuthOnLoad();
-    });
+      });
 
-    // 탭 네비게이션
-    function navigate(tabId) {
+      // 탭 네비게이션
+      function navigate(tabId) {
         // 모든 뷰 숨기기
-        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+        document
+          .querySelectorAll(".view-section")
+          .forEach((el) => el.classList.add("hidden"));
         // 모든 탭 비활성화
-        document.querySelectorAll('.nav-links a').forEach(el => el.classList.remove('active'));
+        document
+          .querySelectorAll(".nav-links a")
+          .forEach((el) => el.classList.remove("active"));
 
         // 선택된 뷰 보이기
-        document.getElementById(`view-${tabId}`).classList.remove('hidden');
-        document.getElementById(`nav-${tabId}`).classList.add('active');
+        document.getElementById(`view-${tabId}`).classList.remove("hidden");
+        document.getElementById(`nav-${tabId}`).classList.add("active");
 
         // 탭별 초기화 동작
-        if (tabId === 'dashboard') {
-            checkAuthOnLoad();
-        } else if (tabId === 'status') {
-            fetchStatus();
+        if (tabId === "dashboard") {
+          checkAuthOnLoad();
+        } else if (tabId === "status") {
+          fetchStatus();
+        } else if (tabId === "admin") {
+          checkAdminAuthOnLoad();
+        } else if (tabId === "issue") {
+          checkSetupStatus();
         }
-    }
+      }
 
-    /* --- [1] 발급 탭 로직 --- */
-    async function getToken() {
-        const btn = document.getElementById('btn-get-token');
+      // 설정 상태 확인 (인증 URL 여부)
+      async function checkSetupStatus() {
+        try {
+          const res = await fetch("/api/auth/token");
+          const data = await res.json();
+          const warning = document.getElementById("setup-warning");
+          const btn = document.getElementById("btn-get-token");
+
+          if (!data.success && data.error.includes("ARCA_POST_URL")) {
+            warning.classList.remove("hidden");
+            btn.disabled = true;
+          } else {
+            warning.classList.add("hidden");
+            btn.disabled = false;
+          }
+        } catch (e) {}
+      }
+
+      /* --- [1] 발급 탭 로직 --- */
+      async function getToken() {
+        const btn = document.getElementById("btn-get-token");
         btn.disabled = true;
-        btn.innerText = '발급 중...';
+        btn.innerText = "발급 중...";
 
         try {
-            const res = await fetch('/api/auth/token');
-            const data = await res.json();
-            
-            if (data.success) {
-                currentTempToken = data.token;
-                document.getElementById('token-text').innerText = data.token;
-                document.getElementById('auth-link').href = data.postUrl;
-                document.getElementById('token-display').classList.remove('hidden');
-                btn.classList.add('hidden');
-            } else {
-                alert('발급 실패: ' + data.error);
-                btn.disabled = false;
-                btn.innerText = '인증 시작하기';
-            }
+          const res = await fetch("/api/auth/token");
+          const data = await res.json();
+
+          if (data.success) {
+            currentTempToken = data.token;
+            document.getElementById("token-text").innerText = data.token;
+            document.getElementById("auth-link").href = data.postUrl;
+            document.getElementById("token-display").classList.remove("hidden");
+            btn.classList.add("hidden");
+          } else {
+            alert("발급 실패: " + data.error);
+            btn.disabled = false;
+            btn.innerText = "인증 시작하기";
+          }
         } catch (e) {
-            alert('서버에 연결할 수 없습니다.');
-            btn.disabled = false;
-            btn.innerText = '인증 시작하기';
+          alert("서버에 연결할 수 없습니다.");
+          btn.disabled = false;
+          btn.innerText = "인증 시작하기";
         }
-    }
+      }
 
-    async function verifyToken() {
+      async function verifyToken() {
         if (!currentTempToken) return;
-        const btn = document.getElementById('btn-verify');
+        const btn = document.getElementById("btn-verify");
         btn.disabled = true;
-        btn.innerText = '확인 중 (크롤링 수행 중...)';
+        btn.innerText = "확인 중 (크롤링 수행 중...)";
 
         try {
-            const res = await fetch('/api/auth/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: currentTempToken })
-            });
-            const data = await res.json();
-            
-            if (data.success) {
-                // 발급 성공! 임시로 변수에 저장
-                currentApiKey = data.data.apiKey;
-                document.getElementById('new-api-key').innerText = currentApiKey;
-                document.getElementById('state-auth').classList.add('hidden');
-                document.getElementById('state-success').classList.remove('hidden');
-            } else {
-                alert('인증 거부됨: ' + data.error);
-                btn.disabled = false;
-                btn.innerText = '댓글 작성 완료 (인증 확인)';
-            }
-        } catch(e) {
-            alert('인증 중 서버 오류가 발생했습니다.');
-            btn.disabled = false;
-            btn.innerText = '댓글 작성 완료 (인증 확인)';
-        }
-    }
+          const res = await fetch("/api/auth/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: currentTempToken }),
+          });
+          const data = await res.json();
 
-    function saveAndGoDashboard() {
+          if (data.success) {
+            // 발급 성공! 임시로 변수에 저장
+            currentApiKey = data.data.apiKey;
+            document.getElementById("new-api-key").innerText = currentApiKey;
+            document.getElementById("state-auth").classList.add("hidden");
+            document.getElementById("state-success").classList.remove("hidden");
+          } else {
+            alert("인증 거부됨: " + data.error);
+            btn.disabled = false;
+            btn.innerText = "댓글 작성 완료 (인증 확인)";
+          }
+        } catch (e) {
+          alert("인증 중 서버 오류가 발생했습니다.");
+          btn.disabled = false;
+          btn.innerText = "댓글 작성 완료 (인증 확인)";
+        }
+      }
+
+      function saveAndGoDashboard() {
         // 성공 후 대시보드 이동 시 기본적으로 기억하기
         localStorage.setItem(API_KEY_STORAGE, currentApiKey);
         // DOM 리셋
-        document.getElementById('state-auth').classList.remove('hidden');
-        document.getElementById('state-success').classList.add('hidden');
-        document.getElementById('token-display').classList.add('hidden');
-        document.getElementById('btn-get-token').classList.remove('hidden');
-        document.getElementById('btn-get-token').disabled = false;
-        document.getElementById('btn-get-token').innerText = '인증 시작하기';
-        document.getElementById('btn-verify').disabled = false;
-        document.getElementById('btn-verify').innerText = '댓글 작성 완료 (인증 확인)';
-        currentTempToken = '';
+        document.getElementById("state-auth").classList.remove("hidden");
+        document.getElementById("state-success").classList.add("hidden");
+        document.getElementById("token-display").classList.add("hidden");
+        document.getElementById("btn-get-token").classList.remove("hidden");
+        document.getElementById("btn-get-token").disabled = false;
+        document.getElementById("btn-get-token").innerText = "인증 시작하기";
+        document.getElementById("btn-verify").disabled = false;
+        document.getElementById("btn-verify").innerText =
+          "댓글 작성 완료 (인증 확인)";
+        currentTempToken = "";
 
-        navigate('dashboard');
-    }
+        navigate("dashboard");
+      }
 
-    /* --- [2] 대시보드 탭 로직 --- */
-    function checkAuthOnLoad() {
+      /* --- [2] 대시보드 탭 로직 --- */
+      function checkAuthOnLoad() {
         const storedKey = localStorage.getItem(API_KEY_STORAGE);
         if (storedKey) {
-            currentApiKey = storedKey;
-            fetchDashboardContent();
+          currentApiKey = storedKey;
+          fetchDashboardContent();
         } else {
-            document.getElementById('dash-login').classList.remove('hidden');
-            document.getElementById('dash-stats').classList.add('hidden');
-            document.getElementById('login-api-key').value = '';
+          document.getElementById("dash-login").classList.remove("hidden");
+          document.getElementById("dash-stats").classList.add("hidden");
+          document.getElementById("login-api-key").value = "";
         }
-    }
+      }
 
-    function loginDashboard() {
-        const inputKey = document.getElementById('login-api-key').value.trim();
+      function loginDashboard() {
+        const inputKey = document.getElementById("login-api-key").value.trim();
         if (!inputKey) {
-            alert("API 키를 입력해주세요.");
-            return;
+          alert("API 키를 입력해주세요.");
+          return;
         }
         currentApiKey = inputKey;
-        
-        if (document.getElementById('check-remember').checked) {
-            localStorage.setItem(API_KEY_STORAGE, currentApiKey);
+
+        if (document.getElementById("check-remember").checked) {
+          localStorage.setItem(API_KEY_STORAGE, currentApiKey);
         } else {
-            localStorage.removeItem(API_KEY_STORAGE);
+          localStorage.removeItem(API_KEY_STORAGE);
         }
-        
+
         fetchDashboardContent();
-    }
+      }
 
-    function logoutDashboard() {
+      function logoutDashboard() {
         localStorage.removeItem(API_KEY_STORAGE);
-        currentApiKey = '';
+        currentApiKey = "";
         checkAuthOnLoad();
-    }
+      }
 
-    async function fetchDashboardContent() {
+      async function fetchDashboardContent() {
         try {
-            const res = await fetch('/api/dashboard', {
-                headers: { 'Authorization': `Bearer ${currentApiKey}` }
-            });
-            const body = await res.json();
-            
-            if (body.success) {
-                document.getElementById('dash-arcaid').innerText = body.data.arcaId;
-                document.getElementById('dash-quota').innerText = body.data.creditBalance.toLocaleString();
-                document.getElementById('dash-status').innerText = body.data.status.toUpperCase();
-                
-                document.getElementById('dash-login').classList.add('hidden');
-                document.getElementById('dash-stats').classList.remove('hidden');
-            } else {
-                alert('조회 실패: ' + body.error);
-                logoutDashboard(); // 유효하지 않은 키면 쫓아냄
-            }
+          const res = await fetch("/api/dashboard", {
+            headers: { Authorization: `Bearer ${currentApiKey}` },
+          });
+          const body = await res.json();
+
+          if (body.success) {
+            document.getElementById("dash-arcaid").innerText = body.data.arcaId;
+            document.getElementById("dash-quota").innerText =
+              body.data.creditBalance.toLocaleString();
+            document.getElementById("dash-status").innerText =
+              body.data.status.toUpperCase();
+
+            document.getElementById("dash-login").classList.add("hidden");
+            document.getElementById("dash-stats").classList.remove("hidden");
+          } else {
+            alert("조회 실패: " + body.error);
+            logoutDashboard(); // 유효하지 않은 키면 쫓아냄
+          }
         } catch (e) {
-            alert('서버와 통신할 수 없습니다.');
+          alert("서버와 통신할 수 없습니다.");
+          logoutDashboard();
+        }
+      }
+
+      async function revokeCurrentKey() {
+        if (
+          !confirm(
+            "🚨 정말 API 키를 영구 파기하시겠습니까?\n이 키를 사용하는 모든 클라이언트의 연결이 즉시 끊어집니다!",
+          )
+        )
+          return;
+
+        try {
+          const res = await fetch("/api/revoke", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${currentApiKey}` }, // 본인 증명
+          });
+          const body = await res.json();
+
+          if (body.success) {
+            alert(body.message);
             logoutDashboard();
-        }
-    }
-
-    async function revokeCurrentKey() {
-        if (!confirm('🚨 정말 API 키를 영구 파기하시겠습니까?\n이 키를 사용하는 모든 클라이언트의 연결이 즉시 끊어집니다!')) return;
-
-        try {
-            const res = await fetch('/api/revoke', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${currentApiKey}` } // 본인 증명
-            });
-            const body = await res.json();
-
-            if (body.success) {
-                alert(body.message);
-                logoutDashboard();
-            } else {
-                alert('파기 실패: ' + body.error);
-            }
+          } else {
+            alert("파기 실패: " + body.error);
+          }
         } catch (e) {
-            alert('서버 통신 오류가 발생했습니다.');
+          alert("서버 통신 오류가 발생했습니다.");
         }
-    }
+      }
 
-    /* --- [3] 상태 탭 로직 --- */
-    async function fetchStatus() {
+      /* --- [3] 상태 탭 로직 --- */
+      async function fetchStatus() {
         try {
-            const res = await fetch('/api/status');
-            const data = await res.json();
-            if(data.success) {
-                document.getElementById('totalUsers').innerText = data.data.totalUsers.toLocaleString() + ' 명';
-                document.getElementById('activeUsers').innerText = data.data.activeUsers24h.toLocaleString() + ' 명';
-                document.getElementById('serverStatus').innerText = data.data.serverStatus.toUpperCase();
-                document.getElementById('serverStatus').style.color = 'var(--success)';
-            }
+          const res = await fetch("/api/status");
+          const data = await res.json();
+          if (data.success) {
+            document.getElementById("totalUsers").innerText =
+              data.data.totalUsers.toLocaleString() + " 명";
+            document.getElementById("activeUsers").innerText =
+              data.data.activeUsers24h.toLocaleString() + " 명";
+            document.getElementById("serverStatus").innerText =
+              data.data.serverStatus.toUpperCase();
+            document.getElementById("serverStatus").style.color =
+              "var(--success)";
+          }
         } catch (err) {
-            document.getElementById('serverStatus').innerText = 'OFFLINE';
-            document.getElementById('serverStatus').style.color = 'var(--danger)';
+          document.getElementById("serverStatus").innerText = "OFFLINE";
+          document.getElementById("serverStatus").style.color = "var(--danger)";
         }
-    }
-</script>
+      }
 
-</body>
+      /* --- [4] 관리자 탭 로직 --- */
+      const ADMIN_TOKEN_STORAGE = "bouncer_admin_pw";
+      let currentAdminPw = "";
+
+      function checkAdminAuthOnLoad() {
+        const storedPw = localStorage.getItem(ADMIN_TOKEN_STORAGE);
+        if (storedPw) {
+          currentAdminPw = storedPw;
+          fetchAdminSettings();
+        } else {
+          document.getElementById("admin-login").classList.remove("hidden");
+          document.getElementById("admin-dashboard").classList.add("hidden");
+        }
+      }
+
+      function loginAdmin() {
+        const pw = document.getElementById("admin-pw").value;
+        if (!pw) return;
+        currentAdminPw = pw;
+        localStorage.setItem(ADMIN_TOKEN_STORAGE, pw);
+        fetchAdminSettings();
+      }
+
+      function logoutAdmin() {
+        localStorage.removeItem(ADMIN_TOKEN_STORAGE);
+        currentAdminPw = "";
+        checkAdminAuthOnLoad();
+      }
+
+      async function fetchAdminSettings() {
+        try {
+          const res = await fetch("/api/admin/settings", {
+            headers: { Authorization: `Admin ${currentAdminPw}` },
+          });
+          const body = await res.json();
+          if (body.success) {
+            document.getElementById("admin-post-url").value =
+              body.data.arcaPostUrl;
+            document.getElementById("admin-login").classList.add("hidden");
+            document
+              .getElementById("admin-dashboard")
+              .classList.remove("hidden");
+          } else {
+            alert("어드민 인증 실패: " + body.error);
+            logoutAdmin();
+          }
+        } catch (e) {
+          alert("통신 오류");
+          logoutAdmin();
+        }
+      }
+
+      async function updatePostUrl() {
+        const newUrl = document.getElementById("admin-post-url").value.trim();
+        try {
+          const res = await fetch("/api/admin/settings/arca-post-url", {
+            method: "POST",
+            headers: {
+              Authorization: `Admin ${currentAdminPw}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ url: newUrl }),
+          });
+          const body = await res.json();
+          alert(body.message || body.error);
+        } catch (e) {
+          alert("업데이트 실패");
+        }
+      }
+
+      async function reloadModels() {
+        if (!confirm("정말 models.json 구성을 서버에서 다시 불러올까요?"))
+          return;
+        try {
+          const res = await fetch("/api/admin/models/reload", {
+            method: "POST",
+            headers: { Authorization: `Admin ${currentAdminPw}` },
+          });
+          const body = await res.json();
+          alert(body.message || body.error);
+        } catch (e) {
+          alert("리로드 실패");
+        }
+      }
+
+      async function searchUser() {
+        const q = document.getElementById("admin-search-q").value.trim();
+        if (!q) return;
+
+        try {
+          const res = await fetch(
+            `/api/admin/users/search?q=${encodeURIComponent(q)}`,
+            {
+              headers: { Authorization: `Admin ${currentAdminPw}` },
+            },
+          );
+          const body = await res.json();
+
+          const cont = document.getElementById("admin-user-results");
+          cont.innerHTML = "";
+
+          if (body.success && body.data.length > 0) {
+            body.data.forEach((u) => {
+              const div = document.createElement("div");
+              div.style =
+                "background: #eee; padding: 10px; border-radius: 6px; margin-bottom: 10px; text-align: left; font-size: 14px;";
+              div.innerHTML = `
+                        <strong>${u.display_name}</strong> (@${u.arca_id})<br>
+                        남은 크레딧: ${u.credit_balance.toLocaleString()} | 상태: <b>${u.status}</b><br>
+                        최근 사용: ${u.last_used_at ? new Date(u.last_used_at).toLocaleString() : "없음"}<br>
+                        <button class="danger-btn" style="padding: 5px 10px; font-size: 12px; width: auto;" onclick="suspendUser('${u.arca_id}')">⚠️ 영구 정지</button>
+                    `;
+              cont.appendChild(div);
+            });
+          } else {
+            cont.innerHTML = "<p>검색 결과가 없습니다.</p>";
+          }
+        } catch (e) {
+          alert("검색 실패");
+        }
+      }
+
+      async function suspendUser(arcaId) {
+        if (
+          !confirm(
+            `🚨 [${arcaId}] 유저를 영구 정지하시겠습니까?\n이 유저의 현존하는 API 키가 즉시 파기되며 재발급도 금지됩니다.`,
+          )
+        )
+          return;
+
+        try {
+          const res = await fetch(`/api/admin/users/${arcaId}/suspend`, {
+            method: "POST",
+            headers: { Authorization: `Admin ${currentAdminPw}` },
+          });
+          const body = await res.json();
+          alert(body.message || body.error);
+          searchUser(); // 리스트 갱신
+        } catch (e) {
+          alert("처리 실패");
+        }
+      }
+    </script>
+  </body>
 </html>

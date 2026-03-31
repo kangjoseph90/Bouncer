@@ -1,49 +1,43 @@
-import * as cheerio from 'cheerio';
-import { spawn } from 'child_process';
-import { config } from '../utils/config';
+import * as cheerio from "cheerio";
+import { spawn } from "child_process";
+import { config } from "../utils/config";
 
 // Cloudflare 등 봇 차단 회피를 위해 curl 기반 다운로더 구현
 async function fetchWithCurl(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    let output = '';
+    let output = "";
     const args = [
-      '-s', '-L',
-      '-A', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      '-H', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-      '-H', 'Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-      url
+      "-s",
+      "-L",
+      "-A",
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "-H",
+      "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "-H",
+      "Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+      url,
     ];
-    
-    const curl = spawn('curl', args);
-    curl.stdout.on('data', (data) => output += data.toString());
-    curl.stderr.on('data', () => {}); // 무시
-    curl.on('error', (err) => reject(new Error('curl 실행 실패: ' + err.message)));
-    curl.on('close', (code) => {
+
+    const curl = spawn("curl", args);
+    curl.stdout.on("data", (data) => (output += data.toString()));
+    curl.stderr.on("data", () => {}); // 무시
+    curl.on("error", (err) =>
+      reject(new Error("curl 실행 실패: " + err.message)),
+    );
+    curl.on("close", (code) => {
       // Cloudflare 403 차단 시 output 내용으로 검증해야 하지만 일단 반환
       resolve(output);
     });
   });
 }
 
-const COMMON_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-  'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-  'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-  'sec-ch-ua-mobile': '?0',
-  'sec-ch-ua-platform': '"Windows"',
-  'sec-fetch-dest': 'document',
-  'sec-fetch-mode': 'navigate',
-  'sec-fetch-site': 'none',
-  'sec-fetch-user': '?1',
-  'upgrade-insecure-requests': '1',
-};
-
 // ==========================================
 // 1. 프로필 링크 파싱
 // ==========================================
 
-export function parseArcaIdFromHref(href: string | undefined): { type: 'fixed' | 'half'; arcaId: string; displayName?: string } | null {
+export function parseArcaIdFromHref(
+  href: string | undefined,
+): { type: "fixed" | "half"; arcaId: string; displayName?: string } | null {
   if (!href) return null;
   // /u/@닉네임 (고정닉) 또는 /u/@닉네임/회원번호 (반고닉)
   const match = href.match(/\/u\/@([^\/]+)(?:\/(\d+))?/);
@@ -54,9 +48,17 @@ export function parseArcaIdFromHref(href: string | undefined): { type: 'fixed' |
     const memberNumber = match[2];
 
     if (memberNumber) {
-      return { type: 'half', arcaId: `half_${memberNumber}`, displayName: nickname };
+      return {
+        type: "half",
+        arcaId: `half_${memberNumber}`,
+        displayName: nickname,
+      };
     } else {
-      return { type: 'fixed', arcaId: `fixed_${nickname}`, displayName: nickname };
+      return {
+        type: "fixed",
+        arcaId: `fixed_${nickname}`,
+        displayName: nickname,
+      };
     }
   } catch (e) {
     return null;
@@ -75,34 +77,35 @@ export function parseArcaIdFromHref(href: string | undefined): { type: 'fixed' |
 export async function findTokenInPost(postUrl: string, expectedToken: string) {
   try {
     // 쿼리 파라미터나 해시가 섞여 있을 수 있으므로 기본 URL 추출
-    const baseUrl = postUrl.split('?')[0].split('#')[0];
+    const baseUrl = postUrl.split("?")[0].split("#")[0];
 
     // 내부 헬퍼: 특정 URL의 페이지를 다운받고 토큰을 검색하며, 존재하는 최대 페이지 수도 반환
     const checkPage = async (url: string) => {
       const html = await fetchWithCurl(url);
-      
-      if (!html || html.length < 1000) throw new Error('Cloudflare 차단 혹은 응답이 비정상적입니다.');
-      
+
+      if (!html || html.length < 1000)
+        throw new Error("Cloudflare 차단 혹은 응답이 비정상적입니다.");
+
       const $ = cheerio.load(html);
 
       let foundProfileHref: string | undefined = undefined;
       let foundDisplayName: string | undefined = undefined;
 
       // 댓글 순회
-      $('.comment-item').each((_, el) => {
+      $(".comment-item").each((_, el) => {
         if (foundProfileHref) return; // 이미 찾았으면 스킵
-        const textContent = $(el).find('.message .text pre').text().trim();
+        const textContent = $(el).find(".message .text pre").text().trim();
 
         if (textContent.includes(expectedToken)) {
-          const userInfoEl = $(el).find('.user-info');
+          const userInfoEl = $(el).find(".user-info");
           const profileLink = userInfoEl.find('a[href^="/u/@"]');
-          
+
           if (profileLink.length > 0) {
-            const href = profileLink.attr('href');
+            const href = profileLink.attr("href");
             const parsed = parseArcaIdFromHref(href);
 
             if (!parsed) return;
-            if (!config.ALLOW_HALF_NICK && parsed.type === 'half') return; // 반고닉 비허용
+            if (!config.ALLOW_HALF_NICK && parsed.type === "half") return; // 반고닉 비허용
 
             foundProfileHref = href;
             foundDisplayName = profileLink.text().trim();
@@ -112,8 +115,8 @@ export async function findTokenInPost(postUrl: string, expectedToken: string) {
 
       // 최대 댓글 페이지(cp) 확인
       let maxCp = 1;
-      $('.pagination .page-link').each((_, el) => {
-        const title = $(el).attr('title') || '';
+      $(".pagination .page-link").each((_, el) => {
+        const title = $(el).attr("title") || "";
         const match = title.match(/(\d+)페이지/);
         if (match) {
           const pageNum = parseInt(match[1], 10);
@@ -140,8 +143,8 @@ export async function findTokenInPost(postUrl: string, expectedToken: string) {
     if (firstCheck.maxCp > 1) {
       for (let cp = firstCheck.maxCp; cp >= 2; cp--) {
         // 불필요한 서버 부하를 막기 위해 짧은 딜레이 추가 (선택적)
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         const pageCheck = await checkPage(`${baseUrl}?cp=${cp}`);
         if (pageCheck.result) return pageCheck.result;
       }
@@ -149,8 +152,10 @@ export async function findTokenInPost(postUrl: string, expectedToken: string) {
 
     return null;
   } catch (error) {
-    console.error('Crawler Error (findTokenInPost):', error);
-    throw new Error('인증 게시물을 크롤링하는 데 실패했습니다. 아카라이브 서버 응답 지연이거나 Cloudflare 차단일 수 있습니다.');
+    console.error("Crawler Error (findTokenInPost):", error);
+    throw new Error(
+      "인증 게시물을 크롤링하는 데 실패했습니다. 아카라이브 서버 응답 지연이거나 Cloudflare 차단일 수 있습니다.",
+    );
   }
 }
 
@@ -181,32 +186,40 @@ export interface ProfileValidationResult {
   };
 }
 
-export async function validateProfileActivity(profileHref: string): Promise<ProfileValidationResult> {
+export async function validateProfileActivity(
+  profileHref: string,
+): Promise<ProfileValidationResult> {
   try {
     // profileHref는 `/u/@닉네임` 또는 `/u/@닉네임/번호` 형태
     const profileUrl = `https://arca.live${profileHref}`;
     const html = await fetchWithCurl(profileUrl);
-    
+
     if (!html || html.length < 1000) {
-      return { passed: false, reason: '프로필 데이터를 가져올 수 없거나 Cloudflare 차단입니다.' };
+      return {
+        passed: false,
+        reason: "프로필 데이터를 가져올 수 없거나 Cloudflare 차단입니다.",
+      };
     }
 
     const $ = cheerio.load(html);
 
     // 프로필 비공개/404 체크
-    if ($('.error-page').length > 0) {
-      return { passed: false, reason: '프로필이 비공개이거나 존재하지 않습니다.' };
+    if ($(".error-page").length > 0) {
+      return {
+        passed: false,
+        reason: "프로필이 비공개이거나 존재하지 않습니다.",
+      };
     }
 
     // ─── Step 1: 히트맵 기반 활동일수 체크 (MIN_ACTIVE_DAYS) ───
     let activeDays = 0;
     if (config.MIN_ACTIVE_DAYS !== Infinity) {
       // .block-part 중 pattern-0이 아닌 것(활동한 날) 카운트
-      const allBlocks = $('.user-activites .block-part');
+      const allBlocks = $(".user-activites .block-part");
       allBlocks.each((_, el) => {
-        const classes = $(el).attr('class') || '';
+        const classes = $(el).attr("class") || "";
         // pattern-0이 아닌 모든 패턴(pattern-1, pattern-2, ...)이 활동일
-        if (classes.includes('block-part') && !classes.includes('pattern-0')) {
+        if (classes.includes("block-part") && !classes.includes("pattern-0")) {
           activeDays++;
         }
       });
@@ -215,36 +228,44 @@ export async function validateProfileActivity(profileHref: string): Promise<Prof
         return {
           passed: false,
           reason: `히트맵 활동 일수 부족 (${activeDays}일 / 최소 ${config.MIN_ACTIVE_DAYS}일 필요)`,
-          details: { activeDays }
+          details: { activeDays },
         };
       }
     }
 
     // ─── Step 2: 최근 활동 기한 체크 (MAX_INACTIVE_DAYS) ───
     if (config.MAX_INACTIVE_DAYS !== Infinity) {
-      const firstTime = $('.user-recent time').first().attr('datetime');
+      const firstTime = $(".user-recent time").first().attr("datetime");
       if (firstTime) {
         const lastActivityMs = new Date(firstTime).getTime();
-        const daysSinceLast = Math.floor((Date.now() - lastActivityMs) / (24 * 60 * 60 * 1000));
-        
+        const daysSinceLast = Math.floor(
+          (Date.now() - lastActivityMs) / (24 * 60 * 60 * 1000),
+        );
+
         if (daysSinceLast > config.MAX_INACTIVE_DAYS) {
           return {
             passed: false,
-            reason: `최근 활동이 너무 오래되었습니다 (${daysSinceLast}일 전 / 최대 ${config.MAX_INACTIVE_DAYS}일 이내 필요)`
+            reason: `최근 활동이 너무 오래되었습니다 (${daysSinceLast}일 전 / 최대 ${config.MAX_INACTIVE_DAYS}일 이내 필요)`,
           };
         }
       } else {
         // time 태그가 아예 없으면 활동 내역 없음
-        return { passed: false, reason: '프로필에서 활동 내역을 확인할 수 없습니다.' };
+        return {
+          passed: false,
+          reason: "프로필에서 활동 내역을 확인할 수 없습니다.",
+        };
       }
     }
 
     // ─── Step 3: 대상 채널 활동량 체크 (TARGET_CHANNELS + MIN_CHANNEL_POSTS) ───
     let channelPosts = 0;
-    if (config.TARGET_CHANNELS.length > 0 && config.MIN_CHANNEL_POSTS !== Infinity) {
+    if (
+      config.TARGET_CHANNELS.length > 0 &&
+      config.MIN_CHANNEL_POSTS !== Infinity
+    ) {
       // 채널 뱃지 링크: a[href="/b/채널명"] (정확히 채널 루트만 매치, 게시글 링크 제외)
       $('.user-recent .col-title a[href^="/b/"]').each((_, el) => {
-        const href = $(el).attr('href') || '';
+        const href = $(el).attr("href") || "";
         // /b/channelName (슬래시 뒤에 숫자 없음) → 채널 뱃지 링크만 매치
         const match = href.match(/^\/b\/([^\/]+)$/);
         if (match && config.TARGET_CHANNELS.includes(match[1])) {
@@ -256,14 +277,14 @@ export async function validateProfileActivity(profileHref: string): Promise<Prof
         return {
           passed: false,
           reason: `대상 채널 활동 부족 (${channelPosts}개 / 최소 ${config.MIN_CHANNEL_POSTS}개 필요)`,
-          details: { channelPosts }
+          details: { channelPosts },
         };
       }
     }
 
     return { passed: true, details: { activeDays, channelPosts } };
   } catch (error) {
-    console.error('Crawler Error (validateProfileActivity):', error);
-    throw new Error('유저 프로필을 조회하는 데 실패했습니다.');
+    console.error("Crawler Error (validateProfileActivity):", error);
+    throw new Error("유저 프로필을 조회하는 데 실패했습니다.");
   }
 }

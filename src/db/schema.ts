@@ -45,6 +45,14 @@ export function initDB() {
   `);
   db.run(`INSERT OR IGNORE INTO server_usage (id, total_used, last_refilled_at) VALUES (1, 0, ${Date.now()})`);
 
+  // 동적 서버 설정 테이블
+  db.run(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `);
+
   // WAL 모드 활성화로 동시성 성능 향상
   db.run('PRAGMA journal_mode = WAL;');
   

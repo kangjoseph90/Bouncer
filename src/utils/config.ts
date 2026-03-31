@@ -4,9 +4,9 @@ import * as path from 'path';
 export const config = {
   // Server
   PORT: parseInt(process.env.PORT || '3000', 10),
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '',
 
   // Crawler (활성 유저 조건)
-  ARCA_POST_URL: process.env.ARCA_POST_URL || '',
   ALLOW_HALF_NICK: process.env.ALLOW_HALF_NICK !== 'false',  // 기본: true (반고닉 허용)
   MIN_ACTIVE_DAYS: process.env.MIN_ACTIVE_DAYS ? parseInt(process.env.MIN_ACTIVE_DAYS, 10) : Infinity,
   MAX_INACTIVE_DAYS: process.env.MAX_INACTIVE_DAYS ? parseInt(process.env.MAX_INACTIVE_DAYS, 10) : Infinity,
