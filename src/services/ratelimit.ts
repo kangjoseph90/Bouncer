@@ -30,8 +30,9 @@ export function checkRateLimits(arcaId: string, modelId: string): { allowed: boo
   if (!modelConfig) return { allowed: false, error: '존재하지 않거나 비활성화된 모델입니다.' };
 
   // Global Check
-  if (globalState.activeRequests >= config.MAX_TOTAL_CONCURRENCY) return { allowed: false, error: '서버 전체 동시 요청 한도 초과' };
-  if (globalState.timestamps.length >= config.MAX_TOTAL_RPM) return { allowed: false, error: '서버 분당 요청 한도 초과' };
+  if (globalState.activeRequests >= config.GLOBAL_MAX_CONCURRENCY) return { allowed: false, error: '서버 전체 동시 요청 한도 초과' };
+  if (globalState.timestamps.length >= config.GLOBAL_MAX_RPM) return { allowed: false, error: '서버 분당 요청 한도 초과' };
+  if (globalState.dailyTimestamps.length >= config.GLOBAL_MAX_RPD) return { allowed: false, error: '서버 일일 요청 한도 초과' };
   
   // Model Global Check (모델별 할당된 Concurrency)
   const currentModelRequests = globalState.modelRequests.get(modelId) || 0;
@@ -48,8 +49,9 @@ export function checkRateLimits(arcaId: string, modelId: string): { allowed: boo
   uState.dailyTimestamps = uState.dailyTimestamps.filter((t) => t > oneDayAgo);
 
   // User Check
-  if (uState.activeRequests >= config.MAX_USER_CONCURRENCY) return { allowed: false, error: '유저 동시 요청 한도 초과' };
-  if (uState.timestamps.length >= config.MAX_USER_RPM) return { allowed: false, error: '유저 분당 요청 한도 초과' };
+  if (uState.activeRequests >= config.USER_MAX_CONCURRENCY) return { allowed: false, error: '유저 동시 요청 한도 초과' };
+  if (uState.timestamps.length >= config.USER_MAX_RPM) return { allowed: false, error: '유저 분당 요청 한도 초과' };
+  if (uState.dailyTimestamps.length >= config.USER_MAX_RPD) return { allowed: false, error: '유저 일일 요청 한도 초과' };
 
   return { allowed: true };
 }
