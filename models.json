@@ -43,6 +43,17 @@
       "cost": { "request": 100 },
       "limits": { "concurrency": 20 },
       "handler": "openai"
+    },
+    {
+      "id": "gemini-3-flash",
+      "displayName": "Google Gemini 3 Flash",
+      "targetModel": "gemini-3-flash",
+      "targetUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "targetKeyEnv": "GEMINI_API_KEY",
+      "billingType": "token",
+      "cost": { "prompt": 0.1, "completion": 0.3 },
+      "limits": { "concurrency": 10 },
+      "handler": "google"
     }
   ]
 }
