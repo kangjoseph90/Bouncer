@@ -16,6 +16,22 @@ const globalState: RateLimitStore = {
 
 const userState = new Map<string, RateLimitStore>();
 
+// 1시간마다 사용하지 않는 유저(빈 배열, activeRequests 0) 메모리 해제 (Garbage Collection)
+setInterval(
+  () => {
+    for (const [arcaId, state] of userState.entries()) {
+      if (
+        state.activeRequests === 0 &&
+        state.timestamps.length === 0 &&
+        state.dailyTimestamps.length === 0
+      ) {
+        userState.delete(arcaId);
+      }
+    }
+  },
+  60 * 60 * 1000,
+);
+
 export function checkRateLimits(
   arcaId: string,
   modelId: string,
