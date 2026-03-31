@@ -178,7 +178,7 @@ export function getUserByArcaId(arcaId: string) {
 }
 
 // 5. DB 작업: 크레딧 차감 및 로깅
-export function chargeUsage(arcaId: string, modelName: string, promptTokens: number, completionTokens: number, totalCost: number) {
+export function chargeUsage(arcaId: string, modelName: string, promptTokens: number, completionTokens: number, totalCost: number, cachedTokens: number = 0) {
   const db = getDB();
   
   // 1. 유저 쿼터 차감
@@ -191,16 +191,17 @@ export function chargeUsage(arcaId: string, modelName: string, promptTokens: num
     $now: Date.now(),
     $arca_id: arcaId
   });
-
+ 
   // 2. 로그 인서트 (지연 쓰기로 최적화 가능하지만 현재는 동시 처리)
   db.query(`
-    INSERT INTO usage_logs (arca_id, model_name, tokens_prompt, tokens_completion, cost, created_at)
-    VALUES ($arca_id, $model, $prompt, $completion, $cost, $now)
+    INSERT INTO usage_logs (arca_id, model_name, tokens_prompt, tokens_completion, tokens_cached, cost, created_at)
+    VALUES ($arca_id, $model, $prompt, $completion, $cached, $cost, $now)
   `).run({
     $arca_id: arcaId,
     $model: modelName,
     $prompt: promptTokens,
     $completion: completionTokens,
+    $cached: cachedTokens,
     $cost: totalCost,
     $now: Date.now()
   });

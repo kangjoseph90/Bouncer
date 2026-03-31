@@ -48,7 +48,7 @@ export interface ModelConfig {
   targetUrl: string;
   targetKeyEnv: string;
   billingType: 'token' | 'request';
-  cost: { prompt?: number; completion?: number; request?: number };
+  cost: { prompt?: number; completion?: number; cached?: number; request?: number };
   limits: { concurrency: number };
   handler: string;
 }

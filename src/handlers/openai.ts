@@ -36,9 +36,14 @@ export class OpenAIHandler extends BaseHandler {
       const usage = respData.usage;
       
       if (usage) {
-         this.applyCharge(usage.prompt_tokens || 0, usage.completion_tokens || 0);
+         const totalPromptTokens = usage.prompt_tokens || 0;
+         const cachedTokens = usage.prompt_tokens_details?.cached_tokens || usage.prompt_cache_hit_tokens || 0;
+         const promptTokens = Math.max(0, totalPromptTokens - cachedTokens);
+         const completionTokens = usage.completion_tokens || 0;
+         
+         this.applyCharge(promptTokens, completionTokens, cachedTokens);
       } else {
-         this.applyCharge(0, 0); // usage 필드가 없으면 기본 차감치 적용
+         this.applyCharge(0, 0, 0); // usage 필드가 없으면 기본 차감치 적용
       }
       
       this.releaseLock();

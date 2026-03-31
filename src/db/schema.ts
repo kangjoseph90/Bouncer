@@ -29,6 +29,7 @@ export function initDB() {
       model_name TEXT NOT NULL,
       tokens_prompt INTEGER DEFAULT 0,
       tokens_completion INTEGER DEFAULT 0,
+      tokens_cached INTEGER DEFAULT 0,   -- 캐시된 토큰 수
       cost INTEGER DEFAULT 0,            -- 차감된 크레딧
       created_at INTEGER NOT NULL,       -- 사용 일시
       FOREIGN KEY(arca_id) REFERENCES users(arca_id)

@@ -70,9 +70,15 @@ export class AnthropicHandler extends BaseHandler {
       const anthropicData = await response.json() as any;
 
       // 4. 과금 처리 (Anthropic은 input_tokens / output_tokens 로 명칭 표기 다름)
-      const inputTokens = anthropicData.usage?.input_tokens || 0;
-      const outputTokens = anthropicData.usage?.output_tokens || 0;
-      this.applyCharge(inputTokens, outputTokens);
+      const usage = anthropicData.usage;
+      const cachedTokens = usage?.cache_read_input_tokens || 0;
+      const freshTokens = usage?.input_tokens || 0;
+      const writeTokens = usage?.cache_write_input_tokens || 0;
+      
+      const promptTokens = freshTokens + writeTokens;
+      const outputTokens = usage?.output_tokens || 0;
+      
+      this.applyCharge(promptTokens, outputTokens, cachedTokens);
       this.releaseLock();
 
       // 5. Anthropic 응답을 역으로 OpenAI 형식으로 포장(Reversing)
@@ -96,9 +102,9 @@ export class AnthropicHandler extends BaseHandler {
           }
         ],
         usage: {
-          prompt_tokens: inputTokens,
+          prompt_tokens: promptTokens + cachedTokens,
           completion_tokens: outputTokens,
-          total_tokens: inputTokens + outputTokens
+          total_tokens: promptTokens + cachedTokens + outputTokens
         }
       };
 

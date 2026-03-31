@@ -18,7 +18,7 @@ export abstract class BaseHandler {
   protected targetUrl: string;
   protected apiKey: string;
   protected billingType: 'token' | 'request';
-  protected cost: { prompt?: number; completion?: number; request?: number };
+  protected cost: { prompt?: number; completion?: number; cached?: number; request?: number };
   
   // 컨텍스트 접근 (Hono 및 Request Body)
   protected c: Context;
@@ -45,7 +45,7 @@ export abstract class BaseHandler {
   abstract handleAction(): Promise<Response>;
 
   // 과금 유틸리티
-  protected applyCharge(pTokens: number, cTokens: number) {
+  protected applyCharge(pTokens: number, cTokens: number, cachedTokens: number = 0) {
     let finalCost = 0;
     
     // 모델스펙이 request 면 무조건 횟수과금으로 판정
@@ -55,10 +55,12 @@ export abstract class BaseHandler {
        // Token billing 모델
        const p = this.cost.prompt || 1;
        const c = this.cost.completion || 1;
-       finalCost = (pTokens * p) + (cTokens * c);
+       const cached = this.cost.cached ?? p; // 캐시 가격이 없으면 일반 프롬프트 가격 사용
+       
+       finalCost = (pTokens * p) + (cTokens * c) + (cachedTokens * cached);
     }
     
-    chargeUsage(this.arcaId, this.modelId, pTokens, cTokens, Math.ceil(finalCost));
+    chargeUsage(this.arcaId, this.modelId, pTokens, cTokens, Math.ceil(finalCost), cachedTokens);
   }
 
   // 요청 종료 라이프사이클 훅
