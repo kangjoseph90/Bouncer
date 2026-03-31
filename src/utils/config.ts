@@ -12,26 +12,24 @@ export const config = {
   MAX_INACTIVE_DAYS: process.env.MAX_INACTIVE_DAYS ? parseInt(process.env.MAX_INACTIVE_DAYS, 10) : Infinity,
   TARGET_CHANNELS: (process.env.TARGET_CHANNELS || '').split(',').map(s => s.trim()).filter(Boolean),
   MIN_CHANNEL_POSTS: process.env.MIN_CHANNEL_POSTS ? parseInt(process.env.MIN_CHANNEL_POSTS, 10) : Infinity,
-  
-  // APIs (Hardcoded removed)
-  
-  // Global Rates (Fallback to Infinity if not set)
-  MAX_USERS: process.env.MAX_USERS ? parseInt(process.env.MAX_USERS, 10) : Infinity,
-  MAX_ACTIVE_USERS: process.env.MAX_ACTIVE_USERS ? parseInt(process.env.MAX_ACTIVE_USERS, 10) : Infinity,
-  MAX_TOTAL_CONCURRENCY: process.env.MAX_TOTAL_CONCURRENCY ? parseInt(process.env.MAX_TOTAL_CONCURRENCY, 10) : Infinity,
-  MAX_TOTAL_RPM: process.env.MAX_TOTAL_RPM ? parseInt(process.env.MAX_TOTAL_RPM, 10) : Infinity,
-  MAX_TOTAL_RPD: process.env.MAX_TOTAL_RPD ? parseInt(process.env.MAX_TOTAL_RPD, 10) : Infinity,
 
-  // Per-User Rates
-  MAX_USER_CONCURRENCY: process.env.MAX_USER_CONCURRENCY ? parseInt(process.env.MAX_USER_CONCURRENCY, 10) : Infinity,
-  MAX_USER_RPM: process.env.MAX_USER_RPM ? parseInt(process.env.MAX_USER_RPM, 10) : Infinity,
-  MAX_USER_RPD: process.env.MAX_USER_RPD ? parseInt(process.env.MAX_USER_RPD, 10) : Infinity,
-  
-  // Quota Refill Mode
-  QUOTA_REFILL_MODE: (process.env.QUOTA_REFILL_MODE || 'none') as 'none' | 'daily' | 'monthly',
-  SERVER_QUOTA_REFILL_MODE: (process.env.SERVER_QUOTA_REFILL_MODE || 'none') as 'none' | 'daily' | 'monthly',
-  USER_QUOTA: parseInt(process.env.USER_QUOTA || '0', 10),
+  // APIs (Hardcoded removed)
+
+  // Global Limits (서버 전체)
+  GLOBAL_MAX_USERS: process.env.GLOBAL_MAX_USERS ? parseInt(process.env.GLOBAL_MAX_USERS, 10) : Infinity,
+  GLOBAL_MAX_ACTIVE_USERS: process.env.GLOBAL_MAX_ACTIVE_USERS ? parseInt(process.env.GLOBAL_MAX_ACTIVE_USERS, 10) : Infinity,
+  GLOBAL_MAX_CONCURRENCY: process.env.GLOBAL_MAX_CONCURRENCY ? parseInt(process.env.GLOBAL_MAX_CONCURRENCY, 10) : Infinity,
+  GLOBAL_MAX_RPM: process.env.GLOBAL_MAX_RPM ? parseInt(process.env.GLOBAL_MAX_RPM, 10) : Infinity,
+  GLOBAL_MAX_RPD: process.env.GLOBAL_MAX_RPD ? parseInt(process.env.GLOBAL_MAX_RPD, 10) : Infinity,
   GLOBAL_QUOTA: process.env.GLOBAL_QUOTA ? parseInt(process.env.GLOBAL_QUOTA, 10) : Infinity,
+  GLOBAL_QUOTA_REFILL_MODE: (process.env.GLOBAL_QUOTA_REFILL_MODE || 'none') as 'none' | 'daily' | 'monthly',
+
+  // Per-User Limits
+  USER_MAX_CONCURRENCY: process.env.USER_MAX_CONCURRENCY ? parseInt(process.env.USER_MAX_CONCURRENCY, 10) : Infinity,
+  USER_MAX_RPM: process.env.USER_MAX_RPM ? parseInt(process.env.USER_MAX_RPM, 10) : Infinity,
+  USER_MAX_RPD: process.env.USER_MAX_RPD ? parseInt(process.env.USER_MAX_RPD, 10) : Infinity,
+  USER_QUOTA: parseInt(process.env.USER_QUOTA || '0', 10),
+  USER_QUOTA_REFILL_MODE: (process.env.USER_QUOTA_REFILL_MODE || 'none') as 'none' | 'daily' | 'monthly',
 
   // Load Balancing
   LOAD_BALANCING_STRATEGY: (process.env.LOAD_BALANCING_STRATEGY || 'random') as 'random' | 'round-robin',
@@ -60,7 +58,7 @@ export function loadModels() {
   try {
     const rawData = fs.readFileSync(path.join(process.cwd(), 'models.json'), 'utf-8');
     const parsed = JSON.parse(rawData);
-    
+
     modelsRegistry.clear();
     roundRobinCounters.clear();
 
@@ -79,7 +77,7 @@ export function loadModels() {
 export function resolveModelConfig(modelId: string): ModelConfig | undefined {
   const pool = modelsRegistry.get(modelId);
   if (!pool || pool.length === 0) return undefined;
-  
+
   if (pool.length === 1) return pool[0];
 
   if (config.LOAD_BALANCING_STRATEGY === 'round-robin') {

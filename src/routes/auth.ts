@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { generateVerificationToken, isValidToken, consumeToken } from '../utils/token';
 import { findTokenInPost, validateProfileActivity } from '../services/crawler';
 import { config } from '../utils/config';
-import { getUserByArcaId, createUser, revokeAndReissue, getSetting } from '../db/queries';
+import { getUserByArcaId, createUser, revokeAndReissue, getSetting, getUserCounts } from '../db/queries';
 
 export const authRoutes = new Hono();
 
@@ -92,6 +92,14 @@ authRoutes.post('/verify', async (c) => {
       resultApiKey = data.apiKey;
       isReissue = true;
     } else {
+      // 유저 수 제한 체크
+      const counts = getUserCounts();
+      if (counts.total >= config.GLOBAL_MAX_USERS) {
+        return c.json({ success: false, error: '유저 등록 한도 초과 (GLOBAL_MAX_USERS)' }, 403);
+      }
+      if (counts.active >= config.GLOBAL_MAX_ACTIVE_USERS) {
+        return c.json({ success: false, error: '활성 유저 한도 초과 (GLOBAL_MAX_ACTIVE_USERS)' }, 403);
+      }
       // 신규 유저 생성
       const data = createUser(profileData.arcaId, profileData.type, profileData.displayName || '');
       resultApiKey = data.apiKey;

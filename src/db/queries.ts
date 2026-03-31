@@ -14,33 +14,33 @@ export function hashApiKey(apiKey: string): string {
 }
 
 function checkAndRefillServerQuota() {
-  if (config.SERVER_QUOTA_REFILL_MODE === 'none') return;
-  
+  if (config.GLOBAL_QUOTA_REFILL_MODE === 'none') return;
+
   const db = getDB();
   const usage = db.query(`SELECT last_refilled_at FROM server_usage WHERE id = 1`).get() as { last_refilled_at: number } | undefined;
   if (!usage) return;
 
-  const now = new Date();
-  const last = new Date(usage.last_refilled_at);
+  const now = Date.now();
+  const oneDayMs = 24 * 60 * 60 * 1000;
   let shouldRefill = false;
 
-  if (config.SERVER_QUOTA_REFILL_MODE === 'daily') {
-    if (now.getDate() !== last.getDate() || now.getMonth() !== last.getMonth() || now.getFullYear() !== last.getFullYear()) {
-      shouldRefill = true;
-    }
-  } else if (config.SERVER_QUOTA_REFILL_MODE === 'monthly') {
-    if (now.getMonth() !== last.getMonth() || now.getFullYear() !== last.getFullYear()) {
-      shouldRefill = true;
-    }
+  if (config.GLOBAL_QUOTA_REFILL_MODE === 'daily') {
+    // 하루 이상 지났으면 리필
+    shouldRefill = (now - usage.last_refilled_at) >= oneDayMs;
+  } else if (config.GLOBAL_QUOTA_REFILL_MODE === 'monthly') {
+    const nowDate = new Date(now);
+    const lastDate = new Date(usage.last_refilled_at);
+    // 월이 바뀌었거나, 연도가 바뀌었으면 리필
+    shouldRefill = nowDate.getMonth() !== lastDate.getMonth() || nowDate.getFullYear() !== lastDate.getFullYear();
   }
 
   if (shouldRefill) {
     db.query(`
-      UPDATE server_usage 
+      UPDATE server_usage
       SET total_used = 0, last_refilled_at = $now
       WHERE id = 1
     `).run({
-      $now: Date.now()
+      $now: now
     });
   }
 }
@@ -143,30 +143,30 @@ export function getUserByApiKey(rawApiKey: string) {
 }
 
 function checkAndRefillQuota(arcaId: string, lastRefilledAt: number) {
-  if (config.QUOTA_REFILL_MODE === 'none') return;
-  
-  const now = new Date();
-  const last = new Date(lastRefilledAt);
+  if (config.USER_QUOTA_REFILL_MODE === 'none') return;
+
+  const now = Date.now();
+  const oneDayMs = 24 * 60 * 60 * 1000;
   let shouldRefill = false;
 
-  if (config.QUOTA_REFILL_MODE === 'daily') {
-    if (now.getDate() !== last.getDate() || now.getMonth() !== last.getMonth() || now.getFullYear() !== last.getFullYear()) {
-      shouldRefill = true;
-    }
-  } else if (config.QUOTA_REFILL_MODE === 'monthly') {
-    if (now.getMonth() !== last.getMonth() || now.getFullYear() !== last.getFullYear()) {
-      shouldRefill = true;
-    }
+  if (config.USER_QUOTA_REFILL_MODE === 'daily') {
+    // 하루 이상 지났으면 리필
+    shouldRefill = (now - lastRefilledAt) >= oneDayMs;
+  } else if (config.USER_QUOTA_REFILL_MODE === 'monthly') {
+    const nowDate = new Date(now);
+    const lastDate = new Date(lastRefilledAt);
+    // 월이 바뀌었거나, 연도가 바뀌었으면 리필
+    shouldRefill = nowDate.getMonth() !== lastDate.getMonth() || nowDate.getFullYear() !== lastDate.getFullYear();
   }
 
   if (shouldRefill) {
     getDB().query(`
-      UPDATE users 
+      UPDATE users
       SET credit_balance = $quota, last_refilled_at = $now
       WHERE arca_id = $arca_id
     `).run({
       $quota: config.USER_QUOTA,
-      $now: Date.now(),
+      $now: now,
       $arca_id: arcaId
     });
   }
@@ -216,10 +216,22 @@ export function getServerStats() {
   const totalUsers = db.query(`SELECT COUNT(*) as count FROM users`).get() as { count: number };
   const last24Hours = Date.now() - (24 * 60 * 60 * 1000);
   const activeUsers = db.query(`SELECT COUNT(*) as count FROM users WHERE last_used_at > $time`).get({ $time: last24Hours }) as { count: number };
-  
+
   return {
     totalUsers: totalUsers?.count || 0,
     activeUsers: activeUsers?.count || 0
+  };
+}
+
+export function getUserCounts() {
+  const db = getDB();
+  const totalUsers = db.query(`SELECT COUNT(*) as count FROM users`).get() as { count: number };
+  const last24Hours = Date.now() - (24 * 60 * 60 * 1000);
+  const activeUsers = db.query(`SELECT COUNT(*) as count FROM users WHERE last_used_at > $time`).get({ $time: last24Hours }) as { count: number };
+
+  return {
+    total: totalUsers?.count || 0,
+    active: activeUsers?.count || 0
   };
 }
 
