@@ -74,10 +74,16 @@ export class GoogleHandler extends BaseHandler {
 
       // 3. 과금 처리 (usageMetadata 추출)
       const usage = geminiData.usageMetadata;
-      const promptTokens = usage?.promptTokenCount || 0;
-      const completionTokens = usage?.candidatesTokenCount || 0;
+      const totalPromptTokens = usage?.promptTokenCount || 0;
+      const cachedTokens = usage?.cachedContentTokenCount || 0;
       
-      this.applyCharge(promptTokens, completionTokens);
+      // pensamientos/추론 토큰(thoughtsTokenCount)이 있으면 출력 토큰에 합산 (Gemini 2.0+ 대응)
+      const outputTokens = (usage?.candidatesTokenCount || 0) + (usage?.thoughtsTokenCount || 0);
+      
+      // 일반 프롬프트 토큰 = 전체 프롬프트 - 캐시된 토큰
+      const promptTokens = Math.max(0, totalPromptTokens - cachedTokens);
+      
+      this.applyCharge(promptTokens, outputTokens, cachedTokens);
       this.releaseLock();
 
       // 4. Gemini 응답 -> OpenAI 규격 역변환
@@ -104,9 +110,9 @@ export class GoogleHandler extends BaseHandler {
           }
         ],
         usage: {
-          prompt_tokens: promptTokens,
-          completion_tokens: completionTokens,
-          total_tokens: promptTokens + completionTokens
+          prompt_tokens: promptTokens + cachedTokens,
+          completion_tokens: outputTokens,
+          total_tokens: promptTokens + cachedTokens + outputTokens
         }
       };
 
