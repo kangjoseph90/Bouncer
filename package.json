@@ -1,0 +1,17 @@
+{
+  "name": "bouncer-proxy",
+  "version": "1.0.0",
+  "description": "ArcaLive Community API Proxy",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "hono": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "models": [
+    {
+      "id": "gpt-4o",
+      "displayName": "GPT-4 Omni",
+      "targetModel": "gpt-4o-2024-05-13",
+      "targetUrl": "https://api.openai.com/v1/chat/completions",
+      "targetKeyEnv": "OPENAI_API_KEY",
+      "billingType": "token",
+      "cost": { "prompt": 5, "completion": 15 },
+      "limits": { "concurrency": 10 },
+      "handler": "openai"
+    },
+    {
+      "id": "cheap-model",
+      "displayName": "가성비 모델(미니)",
+      "targetModel": "gpt-4o-mini",
+      "targetUrl": "https://api.openai.com/v1/chat/completions",
+      "targetKeyEnv": "OPENAI_API_KEY",
+      "billingType": "token",
+      "cost": { "prompt": 0.15, "completion": 0.6 },
+      "limits": { "concurrency": 50 },
+      "handler": "openai"
+    },
+    {
+      "id": "claude-3-5-sonnet",
+      "displayName": "Claude 3.5 Sonnet",
+      "targetModel": "claude-3-5-sonnet-20240620",
+      "targetUrl": "https://api.anthropic.com/v1/messages",
+      "targetKeyEnv": "ANTHROPIC_API_KEY",
+      "billingType": "token",
+      "cost": { "prompt": 3, "completion": 15 },
+      "limits": { "concurrency": 2 },
+      "handler": "anthropic"
+    },
+    {
+      "id": "github-copilot",
+      "displayName": "GitHub Copilot",
+      "targetModel": "gpt-4.1",
+      "targetUrl": "https://api.githubcopilot.com/chat/completions",
+      "targetKeyEnv": "COPILOT_API_KEY",
+      "billingType": "request",
+      "cost": { "request": 100 },
+      "limits": { "concurrency": 20 },
+      "handler": "openai"
+    }
+  ]
+}
