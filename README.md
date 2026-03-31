@@ -54,6 +54,23 @@ Windows 환경에서는 복잡한 명령어 입력이나 도구 설치 없이 `s
 -   **대시보드 관리자 패널**: `http://localhost:3000` 또는 터널 URL
 -   **프록시 엔드포인트**: `https://발급된-터널-주소.trycloudflare.com/v1/chat/completions` (OpenAI 형식 호환)
 
+---
+
+## 🌐 장기 운영을 위한 배포 가이드 (필독)
+
+기본 스크립트 도구나 Docker에 포함된 **Cloudflare 임시 터널(`trycloudflare.com`)은 몇 시간~며칠 단위의 단기 테스트 용도로만 적합**합니다. 재부팅이나 인터넷 끊김 시 주소가 무작위로 변경되어 유저들이 매우 불편해할 수 있습니다. 
+
+방해 없이 24시간 계속 운영하시려면 다음 방법 중 하나로 **영구 배포(Hosting)**를 구성하시길 강력히 권장합니다.
+
+1. **개인 도메인 + Cloudflare Zero Trust (가장 추천)**
+   - 개인 컴퓨터(집 컴퓨터)를 계속 켜둘 수 있다면, 저렴한 도메인을 하나 구입하여 Cloudflare Zero Trust(무료)에 연결하세요.
+   - 공유기 포트포워딩 없이도 디도스 방어가 적용된 **고정 HTTPS 주소(`https://ai.your-domain.com`)**를 평생 무료로 유지할 수 있습니다.
+2. **저가형 VPS 임대 + Nginx 또는 Caddy**
+   - 오라클 클라우드(무료), Vultr, Hetzner 등의 가상 서버(VPS)를 월 5천원~1만원대에 대여하여 24시간 가동합니다.
+   - Nginx Proxy Manager나 Caddy를 띄워 자동으로 HTTPS를 연동하는 정석적인 클라우드 배포 방식입니다.
+3. **홈 서버 + 포트포워딩 & DDNS**
+   - 24시간 가동되는 NAS나 개인 서버가 있다면, 공유기에서 80/443 포트를 개방(포트포워딩)하고 DuckDNS나 IPTIME DDNS 등으로 고정 주소를 발급받아 사용합니다.
+
 ## ⚙️ 설정 (Configuration)
 
 ### `models.json`
