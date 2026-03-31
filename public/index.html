@@ -963,7 +963,9 @@
                         <strong><a href="${profile.url}" target="_blank" style="color: var(--primary); text-decoration: none;">${profile.text}</a></strong><br>
                         남은 크레딧: ${u.credit_balance.toLocaleString()} | 상태: <b>${u.status}</b><br>
                         최근 사용: ${u.last_used_at ? new Date(u.last_used_at).toLocaleString() : "없음"}<br>
-                        <button class="danger-btn" style="padding: 5px 10px; font-size: 12px; width: auto;" onclick="suspendUser('${u.arca_id}')">⚠️ 영구 정지</button>
+                        ${u.status === "suspended" 
+                          ? `<button class="secondary-btn" style="padding: 5px 10px; font-size: 12px; width: auto; background-color: var(--success);" onclick="unsuspendUser('${u.arca_id}')">✅ 정지 해제</button>` 
+                          : `<button class="danger-btn" style="padding: 5px 10px; font-size: 12px; width: auto;" onclick="suspendUser('${u.arca_id}')">⚠️ 영구 정지</button>`}
                     `;
               cont.appendChild(div);
             });
@@ -985,6 +987,22 @@
 
         try {
           const res = await fetch(`/api/admin/users/${arcaId}/suspend`, {
+            method: "POST",
+            headers: { Authorization: `Admin ${currentAdminPw}` },
+          });
+          const body = await res.json();
+          alert(body.message || body.error);
+          searchUser(); // 리스트 갱신
+        } catch (e) {
+          alert("처리 실패");
+        }
+      }
+
+      async function unsuspendUser(arcaId) {
+        if (!confirm(`[${arcaId}] 유저의 정지를 해제하시겠습니까?`)) return;
+
+        try {
+          const res = await fetch(`/api/admin/users/${arcaId}/unsuspend`, {
             method: "POST",
             headers: { Authorization: `Admin ${currentAdminPw}` },
           });
