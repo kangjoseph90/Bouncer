@@ -275,6 +275,11 @@
               <strong>로그인 한 상태</strong>로 댓글을 남겨주세요.
             </p>
             <div class="token-box" id="token-text">로딩중...</div>
+            <p
+              style="font-size: 14px; font-weight: bold; color: var(--primary)"
+            >
+              남은 인증 시간: <span id="token-timer">00:00</span>
+            </p>
             <p class="warning-text">
               ※ 유동(ㅇㅇ)은 인증할 수 없습니다.<br />※ 활동 조건 미달 시 인증이
               거부됩니다.
@@ -611,6 +616,8 @@
         } catch (e) {}
       }
 
+      let tokenTimerInterval;
+
       /* --- [1] 발급 탭 로직 --- */
       async function getToken() {
         const btn = document.getElementById("btn-get-token");
@@ -627,6 +634,30 @@
             document.getElementById("auth-link").href = data.postUrl;
             document.getElementById("token-display").classList.remove("hidden");
             btn.classList.add("hidden");
+
+            // 타이머 شروع
+            if (tokenTimerInterval) clearInterval(tokenTimerInterval);
+            let remainingMs = data.expiresIn;
+
+            const updateTimer = () => {
+              if (remainingMs <= 0) {
+                document.getElementById("token-timer").innerText = "만료됨";
+                document.getElementById("token-timer").style.color =
+                  "var(--danger)";
+                clearInterval(tokenTimerInterval);
+                return;
+              }
+              const mins = Math.floor(remainingMs / 60000);
+              const secs = Math.floor((remainingMs % 60000) / 1000);
+              document.getElementById("token-timer").innerText =
+                `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+              document.getElementById("token-timer").style.color =
+                "var(--primary)";
+              remainingMs -= 1000;
+            };
+
+            updateTimer();
+            tokenTimerInterval = setInterval(updateTimer, 1000);
           } else {
             alert("발급 실패: " + data.error);
             btn.disabled = false;
@@ -655,6 +686,7 @@
 
           if (data.success) {
             // 발급 성공! 임시로 변수에 저장
+            if (tokenTimerInterval) clearInterval(tokenTimerInterval);
             currentApiKey = data.data.apiKey;
             document.getElementById("new-api-key").innerText = currentApiKey;
             document.getElementById("state-auth").classList.add("hidden");

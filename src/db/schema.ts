@@ -1,9 +1,9 @@
-import { Database } from 'bun:sqlite';
+import { Database } from "bun:sqlite";
 
 let db: Database;
 
 export function initDB() {
-  db = new Database('bouncer.sqlite');
+  db = new Database("bouncer.sqlite");
 
   // 사용자 테이블: 발급된 API 키와 크레딧 잔액을 보유
   db.run(`
@@ -44,7 +44,9 @@ export function initDB() {
       last_refilled_at INTEGER NOT NULL
     )
   `);
-  db.run(`INSERT OR IGNORE INTO server_usage (id, total_used, last_refilled_at) VALUES (1, 0, ${Date.now()})`);
+  db.run(
+    `INSERT OR IGNORE INTO server_usage (id, total_used, last_refilled_at) VALUES (1, 0, ${Date.now()})`,
+  );
 
   // 동적 서버 설정 테이블
   db.run(`
@@ -55,8 +57,8 @@ export function initDB() {
   `);
 
   // WAL 모드 활성화로 동시성 성능 향상
-  db.run('PRAGMA journal_mode = WAL;');
-  
+  db.run("PRAGMA journal_mode = WAL;");
+
   return db;
 }
 
