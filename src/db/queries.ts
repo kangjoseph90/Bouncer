@@ -299,18 +299,11 @@ export function getServerStats() {
 }
 
 export function getUserCounts() {
-  const db = getDB();
-  const totalUsers = db.query(`SELECT COUNT(*) as count FROM users`).get() as {
-    count: number;
-  };
-  const last24Hours = Date.now() - 24 * 60 * 60 * 1000;
-  const activeUsers = db
-    .query(`SELECT COUNT(*) as count FROM users WHERE last_used_at > $time`)
-    .get({ $time: last24Hours }) as { count: number };
+  const stats = getServerStats();
 
   return {
-    total: totalUsers?.count || 0,
-    active: activeUsers?.count || 0,
+    total: stats.totalUsers,
+    active: stats.activeUsers,
   };
 }
 
