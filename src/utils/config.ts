@@ -18,6 +18,12 @@ export const config = {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean),
+  TARGET_CHANNELS_SET: new Set(
+    (process.env.TARGET_CHANNELS || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  ),
   MIN_CHANNEL_POSTS: process.env.MIN_CHANNEL_POSTS
     ? parseInt(process.env.MIN_CHANNEL_POSTS, 10)
     : Infinity,

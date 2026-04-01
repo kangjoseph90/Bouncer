@@ -268,7 +268,7 @@ export async function validateProfileActivity(
         const href = $(el).attr("href") || "";
         // /b/channelName (슬래시 뒤에 숫자 없음) → 채널 뱃지 링크만 매치
         const match = href.match(/^\/b\/([^\/]+)$/);
-        if (match && config.TARGET_CHANNELS.includes(match[1])) {
+        if (match && config.TARGET_CHANNELS_SET.has(match[1])) {
           channelPosts++;
         }
       });
