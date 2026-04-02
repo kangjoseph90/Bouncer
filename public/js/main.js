@@ -55,11 +55,12 @@ function getTimeRangeText(res) {
 }
 
 function formatChartLabel(dateStr, res) {
-  if (res === "1d") return dateStr.slice(5); // MM-DD
-  if (res === "1h") return dateStr.slice(5, 13) + "시"; // MM-DD HH
-  if (res === "15m") return dateStr.slice(11, 16); // HH:MM
-  if (res === "5m") return dateStr.slice(11, 16); // HH:MM
-  return dateStr;
+  if (res === "1d") {
+    // 2026-03-31 -> 03/31
+    return dateStr.slice(5, 7) + "/" + dateStr.slice(8, 10);
+  }
+  // 2026-03-31 12:00:00 -> 12:00
+  return dateStr.slice(11, 16);
 }
 
 // 빈 시간 슬롯을 0으로 채우는 함수 (데이터 범위 주변만)
@@ -121,40 +122,9 @@ function fillEmptySlots(dailyData, res) {
     cursor = new Date(cursor.getTime() - intervalMs);
   }
 
-  // 데이터 범위 주변만 남기기 (앞뒤 빈 슬롯 트리밍)
-  const PADDING = 3; // 데이터 앞뒤로 유지할 빈 슬롯 수
-  const MIN_SLOTS = 12; // 최소 표시 슬롯 수
-  const hasData = (s) =>
-    s.total_requests > 0 || s.total_cost > 0 || s.total_prompt > 0;
-  let firstIdx = slots.findIndex(hasData);
-  let lastIdx = -1;
-  for (let i = slots.length - 1; i >= 0; i--) {
-    if (hasData(slots[i])) {
-      lastIdx = i;
-      break;
-    }
-  }
-
-  let trimmed;
-  if (firstIdx === -1) {
-    // 데이터가 전혀 없으면 최근 MIN_SLOTS만 표시
-    trimmed = slots.slice(Math.max(0, slots.length - MIN_SLOTS));
-  } else {
-    const start = Math.max(0, firstIdx - PADDING);
-    const end = Math.min(slots.length - 1, lastIdx + PADDING);
-    trimmed = slots.slice(start, end + 1);
-    // 최소 슬롯 수 확보
-    if (trimmed.length < MIN_SLOTS) {
-      const deficit = MIN_SLOTS - trimmed.length;
-      const newStart = Math.max(0, start - Math.ceil(deficit / 2));
-      const newEnd = Math.min(slots.length - 1, end + Math.floor(deficit / 2));
-      trimmed = slots.slice(newStart, newEnd + 1);
-    }
-  }
-
   return {
-    labels: trimmed.map((s) => formatChartLabel(s.date, res)),
-    filledData: trimmed,
+    labels: slots.map((s) => formatChartLabel(s.date, res)),
+    filledData: slots,
   };
 }
 
