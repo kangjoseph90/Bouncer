@@ -309,15 +309,18 @@ export function getUserCounts() {
 
 // 7. 모니터링 통계 쿼리
 
-function getResolutionConfig(resolution: string | undefined) {
-  let days = 7;
+export function getResolutionConfig(resolution: string | undefined) {
+  let days = 30;
   let groupExpr = "date(created_at / 1000, 'unixepoch', 'localtime')";
 
   if (resolution === '1h') {
-    days = 3;
+    days = 2;
     groupExpr = "datetime((created_at / 1000 / 3600) * 3600, 'unixepoch', 'localtime')";
+  } else if (resolution === '15m') {
+    days = 0.5; // 12시간
+    groupExpr = "datetime((created_at / 1000 / 900) * 900, 'unixepoch', 'localtime')";
   } else if (resolution === '5m') {
-    days = 1;
+    days = 4 / 24; // 4시간
     groupExpr = "datetime((created_at / 1000 / 300) * 300, 'unixepoch', 'localtime')";
   }
   return { days, groupExpr };
