@@ -113,8 +113,8 @@
     container.innerHTML = "";
 
     const H = 200,
-      BAR_W = 32,
-      GAP = 26,
+      BAR_W = 40,
+      GAP = 8,
       YAX_W = 50,
       BOT = 28,
       R_PAD = 16;
@@ -237,8 +237,9 @@
       const idx = +rect.getAttribute("data-idx");
       const d = srcData[idx];
       rect.addEventListener("mouseenter", (e) => {
+        const fullDate = d.date || labels[idx];
         showTooltip(
-          `<div class="tt-title">${labels[idx]}</div>
+          `<div class="tt-title">${fullDate}</div>
            <div class="tt-row">요청: ${cfmtFull(d.total_requests)}</div>
            <div class="tt-row">입력: ${cfmtFull(d.total_prompt)}</div>
            <div class="tt-row">출력: ${cfmtFull(d.total_completion)}</div>
