@@ -6,7 +6,7 @@ import {
   adminSuspendUser,
   adminUnsuspendUser,
 } from "../db/queries";
-import { config, loadModels } from "../utils/config";
+import { config, loadModels, reloadEnvConfig } from "../utils/config";
 
 export const adminRoutes = new Hono<{ Variables: { isAdmin: boolean } }>();
 
@@ -84,6 +84,19 @@ adminRoutes.post("/models/reload", (c) => {
     });
   } catch (e) {
     return c.json({ success: false, error: "models.json 불러오기 실패" }, 500);
+  }
+});
+
+// 3.5. 환경변수 .env: 즉각 리로드
+adminRoutes.post("/env/reload", (c) => {
+  try {
+    reloadEnvConfig();
+    return c.json({
+      success: true,
+      message: ".env 설정을 런타임에 성공적으로 최신화했습니다.",
+    });
+  } catch (e) {
+    return c.json({ success: false, error: ".env 리로드 실패" }, 500);
   }
 });
 

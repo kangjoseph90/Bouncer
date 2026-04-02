@@ -154,3 +154,46 @@ loadModels();
 export function getEnv(keyName: string): string {
   return process.env[keyName] || "";
 }
+
+export function reloadEnvConfig() {
+  const envPath = path.resolve(process.cwd(), ".env");
+  if (fs.existsSync(envPath)) {
+    const raw = fs.readFileSync(envPath, "utf-8");
+    raw.split("\n").forEach((line) => {
+      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+      if (match) {
+        let val = match[2] || "";
+        val = val.trim();
+        if (val.startsWith('"') && val.endsWith('"')) {
+          val = val.slice(1, -1);
+        } else if (val.startsWith("'") && val.endsWith("'")) {
+          val = val.slice(1, -1);
+        }
+        process.env[match[1]] = val;
+      }
+    });
+
+    config.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+    config.ALLOW_HALF_NICK = process.env.ALLOW_HALF_NICK !== "false";
+    config.MIN_ACTIVE_DAYS = process.env.MIN_ACTIVE_DAYS ? parseInt(process.env.MIN_ACTIVE_DAYS, 10) : Infinity;
+    config.MAX_INACTIVE_DAYS = process.env.MAX_INACTIVE_DAYS ? parseInt(process.env.MAX_INACTIVE_DAYS, 10) : Infinity;
+    config.TARGET_CHANNELS = (process.env.TARGET_CHANNELS || "").split(",").map((s) => s.trim()).filter(Boolean);
+    config.MIN_CHANNEL_POSTS = process.env.MIN_CHANNEL_POSTS ? parseInt(process.env.MIN_CHANNEL_POSTS, 10) : Infinity;
+    config.GLOBAL_MAX_USERS = process.env.GLOBAL_MAX_USERS ? parseInt(process.env.GLOBAL_MAX_USERS, 10) : Infinity;
+    config.GLOBAL_MAX_ACTIVE_USERS = process.env.GLOBAL_MAX_ACTIVE_USERS ? parseInt(process.env.GLOBAL_MAX_ACTIVE_USERS, 10) : Infinity;
+    config.GLOBAL_MAX_CONCURRENCY = process.env.GLOBAL_MAX_CONCURRENCY ? parseInt(process.env.GLOBAL_MAX_CONCURRENCY, 10) : Infinity;
+    config.GLOBAL_MAX_RPM = process.env.GLOBAL_MAX_RPM ? parseInt(process.env.GLOBAL_MAX_RPM, 10) : Infinity;
+    config.GLOBAL_MAX_RPD = process.env.GLOBAL_MAX_RPD ? parseInt(process.env.GLOBAL_MAX_RPD, 10) : Infinity;
+    config.GLOBAL_QUOTA = process.env.GLOBAL_QUOTA ? parseInt(process.env.GLOBAL_QUOTA, 10) : Infinity;
+    config.GLOBAL_QUOTA_REFILL_MODE = (process.env.GLOBAL_QUOTA_REFILL_MODE || "none") as any;
+    config.USER_MAX_CONCURRENCY = process.env.USER_MAX_CONCURRENCY ? parseInt(process.env.USER_MAX_CONCURRENCY, 10) : Infinity;
+    config.USER_MAX_RPM = process.env.USER_MAX_RPM ? parseInt(process.env.USER_MAX_RPM, 10) : Infinity;
+    config.USER_MAX_RPD = process.env.USER_MAX_RPD ? parseInt(process.env.USER_MAX_RPD, 10) : Infinity;
+    config.USER_QUOTA = parseInt(process.env.USER_QUOTA || "0", 10);
+    config.USER_QUOTA_REFILL_MODE = (process.env.USER_QUOTA_REFILL_MODE || "none") as any;
+    config.LOAD_BALANCING_STRATEGY = (process.env.LOAD_BALANCING_STRATEGY || "random") as any;
+    config.AUTH_TOKEN_TTL_MINS = parseInt(process.env.AUTH_TOKEN_TTL_MINS || "5", 10);
+    config.AUTH_TOKEN_VERIFY_LIMIT = parseInt(process.env.AUTH_TOKEN_VERIFY_LIMIT || "5", 10);
+  }
+}
+
