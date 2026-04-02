@@ -109,3 +109,6 @@ crawl_samples/
 
 # Build Output
 dist/
+
+# Executable
+cloudflared.exe
