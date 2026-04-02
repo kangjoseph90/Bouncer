@@ -307,7 +307,210 @@ export function getUserCounts() {
   };
 }
 
-// 7. 동적 설정(Settings) 입출력
+// 7. 모니터링 통계 쿼리
+
+// 서버 전체 일별 사용량 (최근 N일)
+export function getServerDailyUsage(days: number = 7) {
+  const db = getDB();
+  const since = Date.now() - days * 24 * 60 * 60 * 1000;
+  return db
+    .query(
+      `
+    SELECT
+      date(created_at / 1000, 'unixepoch', 'localtime') as date,
+      COUNT(*) as total_requests,
+      SUM(tokens_prompt) as total_prompt,
+      SUM(tokens_completion) as total_completion,
+      SUM(tokens_cached) as total_cached,
+      SUM(cost) as total_cost
+    FROM usage_logs
+    WHERE created_at >= $since
+    GROUP BY date
+    ORDER BY date ASC
+  `,
+    )
+    .all({ $since: since }) as {
+    date: string;
+    total_requests: number;
+    total_prompt: number;
+    total_completion: number;
+    total_cached: number;
+    total_cost: number;
+  }[];
+}
+
+// 서버 전체 모델별 사용 집계 (최근 N일)
+export function getServerUsageByModel(days: number = 7) {
+  const db = getDB();
+  const since = Date.now() - days * 24 * 60 * 60 * 1000;
+  return db
+    .query(
+      `
+    SELECT
+      model_name,
+      COUNT(*) as total_requests,
+      SUM(tokens_prompt + tokens_completion + tokens_cached) as total_tokens,
+      SUM(cost) as total_cost
+    FROM usage_logs
+    WHERE created_at >= $since
+    GROUP BY model_name
+    ORDER BY total_cost DESC
+  `,
+    )
+    .all({ $since: since }) as {
+    model_name: string;
+    total_requests: number;
+    total_tokens: number;
+    total_cost: number;
+  }[];
+}
+
+// 글로벌 쿼터 현재 상태
+export function getGlobalQuotaStatus() {
+  const db = getDB();
+  return db
+    .query(`SELECT total_used, last_refilled_at FROM server_usage WHERE id = 1`)
+    .get() as { total_used: number; last_refilled_at: number } | undefined;
+}
+
+// 개인 일별 사용량 (최근 N일)
+export function getUserDailyUsage(arcaId: string, days: number = 7) {
+  const db = getDB();
+  const since = Date.now() - days * 24 * 60 * 60 * 1000;
+  return db
+    .query(
+      `
+    SELECT
+      date(created_at / 1000, 'unixepoch', 'localtime') as date,
+      COUNT(*) as total_requests,
+      SUM(tokens_prompt) as total_prompt,
+      SUM(tokens_completion) as total_completion,
+      SUM(tokens_cached) as total_cached,
+      SUM(cost) as total_cost
+    FROM usage_logs
+    WHERE arca_id = $arca_id AND created_at >= $since
+    GROUP BY date
+    ORDER BY date ASC
+  `,
+    )
+    .all({ $arca_id: arcaId, $since: since }) as {
+    date: string;
+    total_requests: number;
+    total_prompt: number;
+    total_completion: number;
+    total_cached: number;
+    total_cost: number;
+  }[];
+}
+
+// 개인 모델별 사용 집계 (최근 N일)
+export function getUserUsageByModel(arcaId: string, days: number = 7) {
+  const db = getDB();
+  const since = Date.now() - days * 24 * 60 * 60 * 1000;
+  return db
+    .query(
+      `
+    SELECT
+      model_name,
+      COUNT(*) as total_requests,
+      SUM(cost) as total_cost
+    FROM usage_logs
+    WHERE arca_id = $arca_id AND created_at >= $since
+    GROUP BY model_name
+    ORDER BY total_cost DESC
+  `,
+    )
+    .all({ $arca_id: arcaId, $since: since }) as {
+    model_name: string;
+    total_requests: number;
+    total_cost: number;
+  }[];
+}
+
+// 개인 최근 사용 로그
+export function getUserRecentLogs(arcaId: string, limit: number = 20) {
+  const db = getDB();
+  return db
+    .query(
+      `
+    SELECT model_name, tokens_prompt, tokens_completion, tokens_cached, cost, created_at
+    FROM usage_logs
+    WHERE arca_id = $arca_id
+    ORDER BY created_at DESC
+    LIMIT $limit
+  `,
+    )
+    .all({ $arca_id: arcaId, $limit: limit }) as {
+    model_name: string;
+    tokens_prompt: number;
+    tokens_completion: number;
+    tokens_cached: number;
+    cost: number;
+    created_at: number;
+  }[];
+}
+
+// 어드민: 최근 N일 비용 기준 TOP 사용자
+export function getTopUsersByCost(days: number = 7, limit: number = 10) {
+  const db = getDB();
+  const since = Date.now() - days * 24 * 60 * 60 * 1000;
+  return db
+    .query(
+      `
+    SELECT
+      u.arca_id,
+      u.display_name,
+      u.credit_balance,
+      u.status,
+      COUNT(l.id) as total_requests,
+      COALESCE(SUM(l.cost), 0) as total_cost
+    FROM users u
+    LEFT JOIN usage_logs l ON u.arca_id = l.arca_id AND l.created_at >= $since
+    GROUP BY u.arca_id
+    ORDER BY total_cost DESC
+    LIMIT $limit
+  `,
+    )
+    .all({ $since: since, $limit: limit }) as {
+    arca_id: string;
+    display_name: string;
+    credit_balance: number;
+    status: string;
+    total_requests: number;
+    total_cost: number;
+  }[];
+}
+
+// 어드민: 특정 유저 상세 사용 통계
+export function getUserDetailStats(arcaId: string, days: number = 7) {
+  const daily = getUserDailyUsage(arcaId, days);
+  const byModel = getUserUsageByModel(arcaId, days);
+  const recentLogs = getUserRecentLogs(arcaId, 30);
+
+  const db = getDB();
+  const totals = db
+    .query(
+      `
+    SELECT
+      COUNT(*) as total_requests,
+      COALESCE(SUM(cost), 0) as total_cost,
+      COALESCE(SUM(tokens_prompt), 0) as total_prompt,
+      COALESCE(SUM(tokens_completion), 0) as total_completion
+    FROM usage_logs
+    WHERE arca_id = $arca_id
+  `,
+    )
+    .get({ $arca_id: arcaId }) as {
+    total_requests: number;
+    total_cost: number;
+    total_prompt: number;
+    total_completion: number;
+  };
+
+  return { daily, byModel, recentLogs, totals };
+}
+
+// 8. 동적 설정(Settings) 입출력
 export function getSetting(key: string, defaultValue?: string): string {
   const db = getDB();
   const row = db

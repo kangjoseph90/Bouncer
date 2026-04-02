@@ -6,6 +6,7 @@ import { authRoutes } from "./routes/auth";
 import { proxyRoutes } from "./routes/proxy";
 import { dashboardRoutes } from "./routes/dashboard";
 import { adminRoutes } from "./routes/admin";
+import { statsRoutes, adminStatsRoutes } from "./routes/stats";
 import { initDB } from "./db/schema";
 import { config } from "./utils/config";
 
@@ -76,8 +77,14 @@ app.get("/health", (c) => {
 // 대시보드 및 상태 조회
 app.route("/api", dashboardRoutes);
 
+// 통계 API
+app.route("/api/stats", statsRoutes);
+
 // 관리자 패널
 app.route("/api/admin", adminRoutes);
+
+// 관리자 통계
+app.route("/api/admin/stats", adminStatsRoutes);
 
 // 인증 서버
 app.route("/api/auth", authRoutes);
