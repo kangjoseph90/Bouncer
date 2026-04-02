@@ -108,11 +108,27 @@ export const modelsRegistry = new Map<string, ModelConfig[]>();
 const roundRobinCounters = new Map<string, number>();
 
 export function loadModels() {
+  const modelsPath = path.join(process.cwd(), "models.json");
+  const examplePath = path.join(process.cwd(), "models.example.json");
+
+  let filePath = modelsPath;
+
+  // models.json이 없으면 example에서 복사 시도
+  if (!fs.existsSync(modelsPath)) {
+    if (fs.existsSync(examplePath)) {
+      console.log("models.json not found, copying from models.example.json...");
+      fs.copyFileSync(examplePath, modelsPath);
+      console.log("Created models.json from example.");
+    } else {
+      console.error(
+        "CRITICAL: Neither models.json nor models.example.json found!",
+      );
+      return;
+    }
+  }
+
   try {
-    const rawData = fs.readFileSync(
-      path.join(process.cwd(), "models.json"),
-      "utf-8",
-    );
+    const rawData = fs.readFileSync(filePath, "utf-8");
     const parsed = JSON.parse(rawData);
 
     modelsRegistry.clear();
