@@ -9,6 +9,11 @@
         dashModelChart = null,
         svDailyChart = null,
         svModelChart = null;
+      let currentDashDaily = [];
+      let currentSvDaily = [];
+      let currentDashModel = [];
+      let currentSvModel = [];
+      let adminUserState = {};
 
       const CHART_COLORS = [
         "#5b6aff",
@@ -63,30 +68,66 @@
         return null;
       }
 
-      function renderBarChart(canvasId, labels, data, label) {
+      function getTimeRangeText(res) {
+        if (res === '1d') return '(최근 7일)';
+        if (res === '1h') return '(최근 3일)';
+        if (res === '5m') return '(최근 24시간)';
+        return '';
+      }
+
+      function formatChartLabel(dateStr, res) {
+        if (res === '1d') return dateStr.slice(5); // MM-DD
+        if (res === '1h') return dateStr.slice(5, 13) + '시'; // MM-DD HH
+        if (res === '5m') return dateStr.slice(11, 16); // HH:MM
+        return dateStr;
+      }
+
+      function renderDynamicChart(canvasId, labels, srcData, metricLabel, metricType) {
         const ctx = document.getElementById(canvasId).getContext("2d");
+        
+        const datasets = [];
+        const isTokens = metricType === 'tokens';
+
+        if (isTokens) {
+          datasets.push({
+            label: '입력 토큰',
+            data: srcData.map((d) => d.total_prompt),
+            backgroundColor: "#5b6aff99",
+            stack: 'Stack 0',
+          });
+          datasets.push({
+            label: '출력 토큰',
+            data: srcData.map((d) => d.total_completion),
+            backgroundColor: "#ff6b6b99",
+            stack: 'Stack 0',
+          });
+          datasets.push({
+            label: '캐시 토큰',
+            data: srcData.map((d) => d.total_cached),
+            backgroundColor: "#ffa94d99",
+            stack: 'Stack 0',
+          });
+        } else {
+          datasets.push({
+            label: metricLabel,
+            data: srcData.map((d) => metricType === 'cost' ? d.total_cost : d.total_requests),
+            backgroundColor: metricType === 'cost' ? "#5b6aff99" : "#69db7c99",
+            borderColor: metricType === 'cost' ? "#5b6aff" : "#69db7c",
+            borderWidth: 1.5,
+            borderRadius: 5,
+          });
+        }
+
         return new Chart(ctx, {
           type: "bar",
-          data: {
-            labels,
-            datasets: [
-              {
-                label,
-                data,
-                backgroundColor: "#5b6aff99",
-                borderColor: "#5b6aff",
-                borderWidth: 1.5,
-                borderRadius: 5,
-              },
-            ],
-          },
+          data: { labels, datasets },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: { legend: { display: isTokens, labels: { font: { size: 10 }, boxWidth: 10 } } },
             scales: {
-              x: { ticks: { font: { size: 11 } } },
-              y: { ticks: { font: { size: 11 } }, beginAtZero: true },
+              x: { stacked: isTokens, ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 0 } },
+              y: { stacked: isTokens, ticks: { font: { size: 11 } }, beginAtZero: true },
             },
           },
         });
@@ -275,12 +316,13 @@
       }
 
       async function fetchDashboardContent() {
+        const resType = document.getElementById("dash-res-select").value;
         try {
           const [baseRes, statsRes] = await Promise.all([
             fetch("/api/dashboard", {
               headers: { Authorization: `Bearer ${currentApiKey}` },
             }),
-            fetch("/api/stats/user/usage", {
+            fetch(`/api/stats/user/usage?res=${resType}`, {
               headers: { Authorization: `Bearer ${currentApiKey}` },
             }),
           ]);
@@ -329,24 +371,9 @@
                 totals.totalCost,
               );
 
-              dashDailyChart = destroyChart(dashDailyChart);
-              dashModelChart = destroyChart(dashModelChart);
-
-              if (daily.length > 0) {
-                dashDailyChart = renderBarChart(
-                  "dash-daily-chart",
-                  daily.map((d) => d.date.slice(5)),
-                  daily.map((d) => d.total_cost),
-                  "소비 크레딧",
-                );
-              }
-              if (byModel.length > 0) {
-                dashModelChart = renderDoughnutChart(
-                  "dash-model-chart",
-                  byModel.map((m) => limitStr(m.model_name)),
-                  byModel.map((m) => m.total_cost),
-                );
-              }
+              currentDashDaily = daily;
+              currentDashModel = byModel;
+              updateDashChartType();
 
               const tbody = document.getElementById("dash-log-body");
               tbody.innerHTML = "";
@@ -366,6 +393,100 @@
           alert("서버 통신 오류");
           logoutDashboard();
         }
+      }
+
+      function updateDashChartType() {
+        const metric = document.getElementById("dash-metric-select").value;
+        const res = document.getElementById("dash-res-select").value;
+        
+        const trange = document.getElementById("dash-time-range");
+        if(trange) trange.innerText = getTimeRangeText(res);
+        
+        dashDailyChart = destroyChart(dashDailyChart);
+        dashModelChart = destroyChart(dashModelChart);
+        
+        const dailyEmpty = document.getElementById('dash-daily-empty');
+        const modelEmpty = document.getElementById('dash-model-empty');
+
+        if (currentDashDaily.length > 0) {
+          if (dailyEmpty) dailyEmpty.style.display = 'none';
+          const labels = currentDashDaily.map((d) => formatChartLabel(d.date, res));
+          const labelName = metric === 'cost' ? '크레딧' : (metric === 'requests' ? '호출수' : '토큰');
+          dashDailyChart = renderDynamicChart("dash-daily-chart", labels, currentDashDaily, labelName, metric);
+        } else {
+          if (dailyEmpty) dailyEmpty.style.display = 'flex';
+        }
+
+        if (currentDashModel.length > 0) {
+           if (modelEmpty) modelEmpty.style.display = 'none';
+           const mapModelData = (m) => metric === 'cost' ? m.total_cost : (metric === 'requests' ? m.total_requests : m.total_tokens);
+           dashModelChart = renderDoughnutChart(
+             "dash-model-chart",
+             currentDashModel.map((m) => limitStr(m.model_name)),
+             currentDashModel.map(mapModelData)
+           );
+        } else {
+           if (modelEmpty) modelEmpty.style.display = 'flex';
+        }
+      }
+
+      async function refreshAdminUserCharts(arcaId) {
+         const safe = arcaId.replace(/[^a-z0-9_]/gi, "_");
+         const metric = document.getElementById(`adm-metric-${safe}`).value;
+         const res = document.getElementById(`adm-res-${safe}`).value;
+
+         try {
+           const req = await fetch(`/api/admin/stats/user/${arcaId}?res=${res}`, {
+             headers: { Authorization: `Admin ${currentAdminPw}` },
+           });
+           const body = await req.json();
+           if(body.success) {
+             const state = adminUserState[safe] || {};
+             state.currentDaily = body.data.daily;
+             state.currentModel = body.data.byModel;
+             adminUserState[safe] = state;
+             updateAdminChartRender(safe, metric, res);
+             
+             if (body.lastUpdatedAt) {
+                document.getElementById(`stats-time-${arcaId}`).innerText = "마지막 업데이트: " + new Date(body.lastUpdatedAt).toLocaleTimeString("ko-KR", {hour12: false});
+             }
+           }
+         } catch(e) {}
+      }
+
+      function updateAdminChartRender(safe, metric, res) {
+         const state = adminUserState[safe];
+         if(!state) return;
+         
+         state.dailyChart = destroyChart(state.dailyChart);
+         state.modelChart = destroyChart(state.modelChart);
+         
+         const dailyEmpty = document.getElementById(`adm-daily-empty-${safe}`);
+         const modelEmpty = document.getElementById(`adm-model-empty-${safe}`);
+
+         if (state.currentDaily && state.currentDaily.length > 0) {
+            if(dailyEmpty) dailyEmpty.style.display = 'none';
+            const labels = state.currentDaily.map((d) => formatChartLabel(d.date, res));
+            const labelName = metric === 'cost' ? '크레딧' : (metric === 'requests' ? '호출수' : '토큰');
+            state.dailyChart = renderDynamicChart(`adm-daily-${safe}`, labels, state.currentDaily, labelName, metric);
+         } else {
+            if(dailyEmpty) dailyEmpty.style.display = 'flex';
+         }
+
+         if (state.currentModel && state.currentModel.length > 0) {
+            if(modelEmpty) modelEmpty.style.display = 'none';
+            const mapModelData = (m) => metric === 'cost' ? m.total_cost : (metric === 'requests' ? m.total_requests : m.total_tokens);
+            state.modelChart = renderDoughnutChart(`adm-model-${safe}`, state.currentModel.map((m) => limitStr(m.model_name)), state.currentModel.map(mapModelData));
+         } else {
+            if(modelEmpty) modelEmpty.style.display = 'flex';
+         }
+      }
+      
+      function updateAdminMetricOnly(arcaId) {
+         const safe = arcaId.replace(/[^a-z0-9_]/gi, "_");
+         const metric = document.getElementById(`adm-metric-${safe}`).value;
+         const res = document.getElementById(`adm-res-${safe}`).value;
+         updateAdminChartRender(safe, metric, res);
       }
 
       async function revokeCurrentKey() {
@@ -430,10 +551,11 @@
 
       // ── TAB 4: 서버 통계 ─────────────────────────────────────────────
       async function fetchStatus() {
+        const resType = document.getElementById("sv-res-select").value;
         try {
           const [serverRes, usageRes] = await Promise.all([
             fetch("/api/stats/server"),
-            fetch("/api/stats/server/usage"),
+            fetch(`/api/stats/server/usage?res=${resType}`),
           ]);
           const sv = await serverRes.json();
           const usage = await usageRes.json();
@@ -513,25 +635,48 @@
 
           if (usage.success) {
             const { daily, byModel } = usage.data;
-            svDailyChart = destroyChart(svDailyChart);
-            svModelChart = destroyChart(svModelChart);
-            if (daily.length > 0)
-              svDailyChart = renderBarChart(
-                "sv-daily-chart",
-                daily.map((d) => d.date.slice(5)),
-                daily.map((d) => d.total_requests),
-                "요청 수",
-              );
-            if (byModel.length > 0)
-              svModelChart = renderDoughnutChart(
-                "sv-model-chart",
-                byModel.map((m) => limitStr(m.model_name)),
-                byModel.map((m) => m.total_cost),
-              );
+            currentSvDaily = daily;
+            currentSvModel = byModel;
+            updateSvChartType();
           }
         } catch (e) {
           document.getElementById("sv-status").innerText = "OFFLINE";
           document.getElementById("sv-status").className = "stat-val bad";
+        }
+      }
+
+      function updateSvChartType() {
+        const metric = document.getElementById("sv-metric-select").value;
+        const res = document.getElementById("sv-res-select").value;
+
+        const trange = document.getElementById("sv-time-range");
+        if(trange) trange.innerText = getTimeRangeText(res);
+
+        svDailyChart = destroyChart(svDailyChart);
+        svModelChart = destroyChart(svModelChart);
+
+        const dailyEmpty = document.getElementById('sv-daily-empty');
+        const modelEmpty = document.getElementById('sv-model-empty');
+
+        if (currentSvDaily.length > 0) {
+          if (dailyEmpty) dailyEmpty.style.display = 'none';
+          const labels = currentSvDaily.map((d) => formatChartLabel(d.date, res));
+          const labelName = metric === 'cost' ? '크레딧' : (metric === 'requests' ? '호출수' : '토큰');
+          svDailyChart = renderDynamicChart("sv-daily-chart", labels, currentSvDaily, labelName, metric);
+        } else {
+          if (dailyEmpty) dailyEmpty.style.display = 'flex';
+        }
+
+        if (currentSvModel.length > 0) {
+           if (modelEmpty) modelEmpty.style.display = 'none';
+           const mapModelData = (m) => metric === 'cost' ? m.total_cost : (metric === 'requests' ? m.total_requests : m.total_tokens);
+           svModelChart = renderDoughnutChart(
+             "sv-model-chart",
+             currentSvModel.map((m) => limitStr(m.model_name)),
+             currentSvModel.map(mapModelData)
+           );
+        } else {
+           if (modelEmpty) modelEmpty.style.display = 'flex';
         }
       }
 
@@ -729,10 +874,10 @@
         }
         btn.innerText = "로딩...";
         try {
-          const res = await fetch(`/api/admin/stats/user/${arcaId}`, {
+          const resReq = await fetch(`/api/admin/stats/user/${arcaId}?res=1h`, {
             headers: { Authorization: `Admin ${currentAdminPw}` },
           });
-          const body = await res.json();
+          const body = await resReq.json();
           if (!body.success) {
             panel.innerHTML =
               '<p style="color:var(--danger);font-size:13px">로드 실패</p>';
@@ -756,9 +901,21 @@
         <div class="stat-card"><h3>전체 요청</h3><div class="stat-val" style="font-size:18px">${fmtNum(totals.total_requests)}</div></div>
         <div class="stat-card"><h3>전체 소비</h3><div class="stat-val" style="font-size:18px">${fmtNum(totals.total_cost)}</div></div>
       </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:4px;gap:4px">
+         <select id="adm-metric-${safe}" onchange="updateAdminMetricOnly('${arcaId}')" style="padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); font-size: 12px;">
+           <option value="requests">호출수</option>
+           <option value="cost" selected>크레딧</option>
+           <option value="tokens">토큰</option>
+         </select>
+         <select id="adm-res-${safe}" onchange="refreshAdminUserCharts('${arcaId}')" style="padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); font-size: 12px;">
+           <option value="1d">1일</option>
+           <option value="1h" selected>1시간</option>
+           <option value="5m">5분</option>
+         </select>
+      </div>
       <div class="grid2" style="margin-bottom:10px">
-        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">7일 일별 소비</div><div class="chart-wrap" style="height:160px"><canvas id="adm-daily-${safe}"></canvas></div></div>
-        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">모델별 분포</div><div class="chart-wrap" style="height:160px"><canvas id="adm-model-${safe}"></canvas></div></div>
+        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">통계 그래프</div><div class="chart-wrap" style="height:160px;position:relative"><div id="adm-daily-empty-${safe}" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:12px;color:var(--muted);z-index:10">데이터가 없습니다</div><canvas id="adm-daily-${safe}"></canvas></div></div>
+        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">모델별 분포</div><div class="chart-wrap" style="height:160px;position:relative"><div id="adm-model-empty-${safe}" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:12px;color:var(--muted);z-index:10">데이터가 없습니다</div><canvas id="adm-model-${safe}"></canvas></div></div>
       </div>
       <div style="overflow-x:auto">
         <table>
@@ -770,19 +927,13 @@
           panel.classList.remove("hidden");
           btn.innerText = "닫기";
 
-          if (daily.length > 0)
-            renderBarChart(
-              `adm-daily-${safe}`,
-              daily.map((d) => d.date.slice(5)),
-              daily.map((d) => d.total_cost),
-              "소비",
-            );
-          if (byModel.length > 0)
-            renderDoughnutChart(
-              `adm-model-${safe}`,
-              byModel.map((m) => limitStr(m.model_name)),
-              byModel.map((m) => m.total_cost),
-            );
+          adminUserState[safe] = {
+             currentDaily: daily,
+             currentModel: byModel,
+             dailyChart: null,
+             modelChart: null
+          };
+          updateAdminChartRender(safe, 'cost', '1h');
 
           const tbody = document.getElementById(`adm-log-${safe}`);
           if (recentLogs.length === 0) {

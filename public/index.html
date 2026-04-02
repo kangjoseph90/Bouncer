@@ -168,23 +168,31 @@
             style="
               display: flex;
               justify-content: space-between;
-              align-items: baseline;
+              align-items: center;
               border-bottom: 1px solid var(--border);
               margin-bottom: 14px;
               padding-bottom: 8px;
+              flex-wrap: wrap;
+              gap: 10px;
             "
           >
-            <h2 style="margin: 0; padding: 0; border: none">
+            <h2 style="margin: 0; padding: 0; border: none; display: flex; align-items: center; gap: 10px;">
               내 사용 현황
-              <span
-                style="font-size: 13px; font-weight: 400; color: var(--muted)"
-                >(최근 7일)</span
-              >
+              <span id="dash-time-range" style="font-size: 13px; font-weight: 400; color: var(--muted)"></span>
             </h2>
-            <span
-              id="dash-last-updated"
-              style="font-size: 12px; color: var(--muted)"
-            ></span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span id="dash-last-updated" style="font-size: 12px; color: var(--muted)"></span>
+              <select id="dash-metric-select" onchange="updateDashChartType()" style="padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); font-size: 13px;">
+                <option value="requests">호출수</option>
+                <option value="cost" selected>크레딧</option>
+                <option value="tokens">토큰</option>
+              </select>
+              <select id="dash-res-select" onchange="fetchDashboardContent()" style="padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); font-size: 13px;">
+                <option value="1d">1일</option>
+                <option value="1h" selected>1시간</option>
+                <option value="5m">5분</option>
+              </select>
+            </div>
           </div>
           <div class="grid2">
             <div>
@@ -196,9 +204,10 @@
                   margin-bottom: 6px;
                 "
               >
-                일별 소비 크레딧
+                통계 그래프
               </div>
-              <div class="chart-wrap">
+              <div class="chart-wrap" style="position: relative;">
+                <div id="dash-daily-empty" style="display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-size: 13px; color: var(--muted); z-index: 10;">데이터가 없습니다</div>
                 <canvas id="dash-daily-chart"></canvas>
               </div>
             </div>
@@ -211,9 +220,10 @@
                   margin-bottom: 6px;
                 "
               >
-                모델별 사용 비율
+                모델별 분포
               </div>
-              <div class="chart-wrap">
+              <div class="chart-wrap" style="position: relative;">
+                <div id="dash-model-empty" style="display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-size: 13px; color: var(--muted); z-index: 10;">데이터가 없습니다</div>
                 <canvas id="dash-model-chart"></canvas>
               </div>
             </div>
@@ -402,12 +412,24 @@
       </div>
 
       <div class="card">
-        <h2>
-          서버 전체 사용량
-          <span style="font-size: 13px; font-weight: 400; color: var(--muted)"
-            >(최근 7일)</span
-          >
-        </h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+          <h2 style="margin: 0; border: none; padding: 0; display: flex; align-items: center; gap: 10px;">
+            서버 전체 사용량
+            <span id="sv-time-range" style="font-size: 13px; font-weight: 400; color: var(--muted)"></span>
+          </h2>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="sv-metric-select" onchange="updateSvChartType()" style="padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); font-size: 13px;">
+              <option value="requests">호출수</option>
+              <option value="cost" selected>크레딧</option>
+              <option value="tokens">토큰</option>
+            </select>
+            <select id="sv-res-select" onchange="fetchStatus()" style="padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); font-size: 13px;">
+              <option value="1d">1일</option>
+              <option value="1h" selected>1시간</option>
+              <option value="5m">5분</option>
+            </select>
+          </div>
+        </div>
         <div class="grid2">
           <div>
             <div
@@ -418,9 +440,12 @@
                 margin-bottom: 6px;
               "
             >
-              일별 요청 수
+              통계 그래프
             </div>
-            <div class="chart-wrap"><canvas id="sv-daily-chart"></canvas></div>
+            <div class="chart-wrap" style="position: relative;">
+              <div id="sv-daily-empty" style="display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-size: 13px; color: var(--muted); z-index: 10;">데이터가 없습니다</div>
+              <canvas id="sv-daily-chart"></canvas>
+            </div>
           </div>
           <div>
             <div
@@ -431,9 +456,12 @@
                 margin-bottom: 6px;
               "
             >
-              모델별 비용 분포
+              모델별 분포
             </div>
-            <div class="chart-wrap"><canvas id="sv-model-chart"></canvas></div>
+            <div class="chart-wrap" style="position: relative;">
+              <div id="sv-model-empty" style="display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-size: 13px; color: var(--muted); z-index: 10;">데이터가 없습니다</div>
+              <canvas id="sv-model-chart"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -478,6 +506,7 @@
           id="admin-pw"
           placeholder="Admin Secret"
           autocomplete="off"
+          onkeydown="if(event.key === 'Enter') loginAdmin()"
         />
         <button onclick="loginAdmin()" style="margin-top: 14px">로그인</button>
       </div>
@@ -493,6 +522,7 @@
                 id="admin-post-url"
                 placeholder="https://arca.live/b/..."
                 style="margin-top: 0; flex: 1"
+                onkeydown="if(event.key === 'Enter') updatePostUrl()"
               />
               <button
                 onclick="updatePostUrl()"
@@ -561,6 +591,7 @@
               id="admin-search-q"
               placeholder="닉네임 또는 ARCA ID"
               style="margin-top: 0; flex: 1"
+              onkeydown="if(event.key === 'Enter') searchUser()"
             />
             <button
               onclick="searchUser()"

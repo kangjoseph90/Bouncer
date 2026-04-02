@@ -309,15 +309,30 @@ export function getUserCounts() {
 
 // 7. 모니터링 통계 쿼리
 
-// 서버 전체 일별 사용량 (최근 N일)
-export function getServerDailyUsage(days: number = 7) {
+function getResolutionConfig(resolution: string | undefined) {
+  let days = 7;
+  let groupExpr = "date(created_at / 1000, 'unixepoch', 'localtime')";
+
+  if (resolution === '1h') {
+    days = 3;
+    groupExpr = "datetime((created_at / 1000 / 3600) * 3600, 'unixepoch', 'localtime')";
+  } else if (resolution === '5m') {
+    days = 1;
+    groupExpr = "datetime((created_at / 1000 / 300) * 300, 'unixepoch', 'localtime')";
+  }
+  return { days, groupExpr };
+}
+
+// 서버 전체 사용량 (해상도 지원)
+export function getServerDailyUsage(resolution: string = '1d') {
   const db = getDB();
+  const { days, groupExpr } = getResolutionConfig(resolution);
   const since = Date.now() - days * 24 * 60 * 60 * 1000;
   return db
     .query(
       `
     SELECT
-      date(created_at / 1000, 'unixepoch', 'localtime') as date,
+      ${groupExpr} as date,
       COUNT(*) as total_requests,
       SUM(tokens_prompt) as total_prompt,
       SUM(tokens_completion) as total_completion,
@@ -349,7 +364,7 @@ export function getServerUsageByModel(days: number = 7) {
     SELECT
       model_name,
       COUNT(*) as total_requests,
-      SUM(tokens_prompt + tokens_completion + tokens_cached) as total_tokens,
+      SUM(COALESCE(tokens_prompt, 0) + COALESCE(tokens_completion, 0) + COALESCE(tokens_cached, 0)) as total_tokens,
       SUM(cost) as total_cost
     FROM usage_logs
     WHERE created_at >= $since
@@ -373,15 +388,16 @@ export function getGlobalQuotaStatus() {
     .get() as { total_used: number; last_refilled_at: number } | undefined;
 }
 
-// 개인 일별 사용량 (최근 N일)
-export function getUserDailyUsage(arcaId: string, days: number = 7) {
+// 개인 일별 사용량 (해상도 지원)
+export function getUserDailyUsage(arcaId: string, resolution: string = '1d') {
   const db = getDB();
+  const { days, groupExpr } = getResolutionConfig(resolution);
   const since = Date.now() - days * 24 * 60 * 60 * 1000;
   return db
     .query(
       `
     SELECT
-      date(created_at / 1000, 'unixepoch', 'localtime') as date,
+      ${groupExpr} as date,
       COUNT(*) as total_requests,
       SUM(tokens_prompt) as total_prompt,
       SUM(tokens_completion) as total_completion,
@@ -413,7 +429,8 @@ export function getUserUsageByModel(arcaId: string, days: number = 7) {
     SELECT
       model_name,
       COUNT(*) as total_requests,
-      SUM(cost) as total_cost
+      SUM(cost) as total_cost,
+      SUM(COALESCE(tokens_prompt, 0) + COALESCE(tokens_completion, 0) + COALESCE(tokens_cached, 0)) as total_tokens
     FROM usage_logs
     WHERE arca_id = $arca_id AND created_at >= $since
     GROUP BY model_name
@@ -424,6 +441,7 @@ export function getUserUsageByModel(arcaId: string, days: number = 7) {
     model_name: string;
     total_requests: number;
     total_cost: number;
+    total_tokens: number;
   }[];
 }
 
@@ -482,8 +500,9 @@ export function getTopUsersByCost(days: number = 7, limit: number = 10) {
 }
 
 // 어드민: 특정 유저 상세 사용 통계
-export function getUserDetailStats(arcaId: string, days: number = 7) {
-  const daily = getUserDailyUsage(arcaId, days);
+export function getUserDetailStats(arcaId: string, resolution: string = '1d') {
+  const daily = getUserDailyUsage(arcaId, resolution);
+  const { days } = getResolutionConfig(resolution);
   const byModel = getUserUsageByModel(arcaId, days);
   const recentLogs = getUserRecentLogs(arcaId, 30);
 
