@@ -147,6 +147,13 @@ export function resolveModelConfig(modelId: string): ModelConfig | undefined {
   }
 }
 
+// 모델 id의 전체 concurrency 합계 반환 (여러 백엔드 키 로드밸런싱 시)
+export function getTotalConcurrency(modelId: string): number {
+  const pool = modelsRegistry.get(modelId);
+  if (!pool || pool.length === 0) return 0;
+  return pool.reduce((sum, m) => sum + m.limits.concurrency, 0);
+}
+
 // Initial load
 loadModels();
 

@@ -12,7 +12,7 @@ import {
   getResolutionConfig,
 } from "../db/queries";
 import { getUserByApiKey } from "../db/queries";
-import { config, modelsRegistry } from "../utils/config";
+import { config, modelsRegistry, getTotalConcurrency } from "../utils/config";
 
 export const statsRoutes = new Hono();
 
@@ -28,7 +28,7 @@ statsRoutes.get("/models", (c) => {
       displayName: m.displayName,
       billingType: m.billingType,
       cost: m.cost,
-      concurrency: m.limits.concurrency,
+      concurrency: getTotalConcurrency(m.id),
       active: hasKey,
     };
   });
