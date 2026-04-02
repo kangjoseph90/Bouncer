@@ -9,7 +9,10 @@ RUN bun install --frozen-lockfile --production
 # 3. 소스 코드 복사
 COPY . .
 
-# 4. 환경 변수 기본값 설정
+# 4. models.json 기본값 생성 (없으면 example에서 복사)
+RUN if [ ! -f models.json ]; then cp models.example.json models.json; fi
+
+# 5. 환경 변수 기본값 설정
 ENV PORT=3000
 ENV NODE_ENV=production
 

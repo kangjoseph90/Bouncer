@@ -20,6 +20,18 @@ pause >nul
 
 :check_models
 :: 2. models.json Check
+if exist "models.json" goto ask_edit_models
+
+echo [!] models.json file not found. Creating from models.example.json...
+copy models.example.json models.json >nul
+echo Please configure your models in models.json.
+notepad models.json
+echo.
+echo Press any key when you are done configuring models...
+pause >nul
+goto check_bun
+
+:ask_edit_models
 echo [?] Do you want to configure your AI Models (models.json) now?
 echo (If you already did, just type N and press Enter)
 set /p MODEL_EDIT="Open models.json? (Y/N): "
