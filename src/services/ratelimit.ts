@@ -1,4 +1,4 @@
-import { resolveModelConfig, config } from "../utils/config";
+import { resolveModelConfig, config, getTotalConcurrency } from "../utils/config";
 
 interface RateLimitStore {
   timestamps: number[];
@@ -61,9 +61,10 @@ export function checkRateLimits(
   if (globalState.dailyTimestamps.length >= config.GLOBAL_MAX_RPD)
     return { allowed: false, error: "서버 일일 요청 한도 초과" };
 
-  // Model Global Check (모델별 할당된 Concurrency)
+  // Model Global Check (모델별 할당된 Concurrency - 합산)
   const currentModelRequests = globalState.modelRequests.get(modelId) || 0;
-  if (currentModelRequests >= modelConfig.limits.concurrency) {
+  const totalModelConcurrency = getTotalConcurrency(modelId);
+  if (currentModelRequests >= totalModelConcurrency) {
     return {
       allowed: false,
       error: `'${modelId}' 모델의 전역 할당 슬롯(Concurrency)이 모두 찼습니다. 잠시 후 재시도하세요.`,
