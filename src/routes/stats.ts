@@ -60,6 +60,15 @@ setInterval(() => {
     if (now - entry.lastUpdatedAt > CACHE_TTL_MS) adminUserDetailCache.delete(key);
   }
 }, 10 * 60 * 1000);
+/* [CACHE_CLEARER_ADDED] */
+export function clearStatsCache() {
+  serverStatsCache = null;
+  serverUsageCache.clear();
+  topUsersCache = null;
+  userUsageCache.clear();
+  adminUserDetailCache.clear();
+  console.log("Runtime configuration reload triggered: Stats caches cleared.");
+}
 
 // 서버 전체 현황 (유저 수, 쿼터, Rate Limit 설정)
 statsRoutes.get("/server", (c) => {
