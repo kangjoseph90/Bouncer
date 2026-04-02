@@ -592,6 +592,7 @@ async function fetchStatus() {
         limRow("최대 활성 유저", gl.maxActiveUsers) +
         limRow("동시 요청", gl.maxConcurrency) +
         limRow("RPM", gl.maxRpm) +
+        limRow("RPH", gl.maxRph) +
         limRow("RPD", gl.maxRpd);
       document
         .getElementById("sv-user-limits")
@@ -600,6 +601,7 @@ async function fetchStatus() {
         limRow("쿼터 리필", refillLabel[ul.quotaRefillMode] || "-") +
         limRow("동시 요청", ul.maxConcurrency) +
         limRow("RPM", ul.maxRpm) +
+        limRow("RPH", ul.maxRph) +
         limRow("RPD", ul.maxRpd);
     }
 

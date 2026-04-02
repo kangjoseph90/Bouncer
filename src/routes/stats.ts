@@ -97,6 +97,7 @@ statsRoutes.get("/server", (c) => {
           maxActiveUsers: config.GLOBAL_MAX_ACTIVE_USERS === Infinity ? null : config.GLOBAL_MAX_ACTIVE_USERS,
           maxConcurrency: config.GLOBAL_MAX_CONCURRENCY === Infinity ? null : config.GLOBAL_MAX_CONCURRENCY,
           maxRpm: config.GLOBAL_MAX_RPM === Infinity ? null : config.GLOBAL_MAX_RPM,
+          maxRph: config.GLOBAL_MAX_RPH === Infinity ? null : config.GLOBAL_MAX_RPH,
           maxRpd: config.GLOBAL_MAX_RPD === Infinity ? null : config.GLOBAL_MAX_RPD,
         },
         perUser: {
@@ -104,6 +105,7 @@ statsRoutes.get("/server", (c) => {
           quotaRefillMode: config.USER_QUOTA_REFILL_MODE,
           maxConcurrency: config.USER_MAX_CONCURRENCY === Infinity ? null : config.USER_MAX_CONCURRENCY,
           maxRpm: config.USER_MAX_RPM === Infinity ? null : config.USER_MAX_RPM,
+          maxRph: config.USER_MAX_RPH === Infinity ? null : config.USER_MAX_RPH,
           maxRpd: config.USER_MAX_RPD === Infinity ? null : config.USER_MAX_RPD,
       },
     },

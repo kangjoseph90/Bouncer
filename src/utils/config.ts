@@ -37,6 +37,9 @@ export const config = {
   GLOBAL_MAX_RPM: process.env.GLOBAL_MAX_RPM
     ? parseInt(process.env.GLOBAL_MAX_RPM, 10)
     : Infinity,
+  GLOBAL_MAX_RPH: process.env.GLOBAL_MAX_RPH
+    ? parseInt(process.env.GLOBAL_MAX_RPH, 10)
+    : Infinity,
   GLOBAL_MAX_RPD: process.env.GLOBAL_MAX_RPD
     ? parseInt(process.env.GLOBAL_MAX_RPD, 10)
     : Infinity,
@@ -54,6 +57,9 @@ export const config = {
     : Infinity,
   USER_MAX_RPM: process.env.USER_MAX_RPM
     ? parseInt(process.env.USER_MAX_RPM, 10)
+    : Infinity,
+  USER_MAX_RPH: process.env.USER_MAX_RPH
+    ? parseInt(process.env.USER_MAX_RPH, 10)
     : Infinity,
   USER_MAX_RPD: process.env.USER_MAX_RPD
     ? parseInt(process.env.USER_MAX_RPD, 10)
@@ -214,6 +220,9 @@ export function reloadEnvConfig() {
     config.GLOBAL_MAX_RPM = process.env.GLOBAL_MAX_RPM
       ? parseInt(process.env.GLOBAL_MAX_RPM, 10)
       : Infinity;
+    config.GLOBAL_MAX_RPH = process.env.GLOBAL_MAX_RPH
+      ? parseInt(process.env.GLOBAL_MAX_RPH, 10)
+      : Infinity;
     config.GLOBAL_MAX_RPD = process.env.GLOBAL_MAX_RPD
       ? parseInt(process.env.GLOBAL_MAX_RPD, 10)
       : Infinity;
@@ -227,6 +236,9 @@ export function reloadEnvConfig() {
       : Infinity;
     config.USER_MAX_RPM = process.env.USER_MAX_RPM
       ? parseInt(process.env.USER_MAX_RPM, 10)
+      : Infinity;
+    config.USER_MAX_RPH = process.env.USER_MAX_RPH
+      ? parseInt(process.env.USER_MAX_RPH, 10)
       : Infinity;
     config.USER_MAX_RPD = process.env.USER_MAX_RPD
       ? parseInt(process.env.USER_MAX_RPD, 10)

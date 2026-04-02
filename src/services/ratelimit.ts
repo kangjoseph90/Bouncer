@@ -2,6 +2,7 @@ import { resolveModelConfig, config, getTotalConcurrency } from "../utils/config
 
 interface RateLimitStore {
   timestamps: number[];
+  hourlyTimestamps: number[];
   dailyTimestamps: number[];
   activeRequests: number;
   modelRequests: Map<string, number>; // 모델별 동시성 추적
@@ -9,6 +10,7 @@ interface RateLimitStore {
 
 const globalState: RateLimitStore = {
   timestamps: [],
+  hourlyTimestamps: [],
   dailyTimestamps: [],
   activeRequests: 0,
   modelRequests: new Map<string, number>(),
@@ -23,6 +25,7 @@ setInterval(
       if (
         state.activeRequests === 0 &&
         state.timestamps.length === 0 &&
+        state.hourlyTimestamps.length === 0 &&
         state.dailyTimestamps.length === 0
       ) {
         userState.delete(arcaId);
@@ -38,11 +41,15 @@ export function checkRateLimits(
 ): { allowed: boolean; error?: string } {
   const now = Date.now();
   const oneMinuteAgo = now - 60 * 1000;
+  const oneHourAgo = now - 60 * 60 * 1000;
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
 
   // Cleanup globals
   globalState.timestamps = globalState.timestamps.filter(
     (t) => t > oneMinuteAgo,
+  );
+  globalState.hourlyTimestamps = globalState.hourlyTimestamps.filter(
+    (t) => t > oneHourAgo,
   );
   globalState.dailyTimestamps = globalState.dailyTimestamps.filter(
     (t) => t > oneDayAgo,
@@ -58,6 +65,8 @@ export function checkRateLimits(
     return { allowed: false, error: "서버 전체 동시 요청 한도 초과" };
   if (globalState.timestamps.length >= config.GLOBAL_MAX_RPM)
     return { allowed: false, error: "서버 분당 요청 한도 초과" };
+  if (globalState.hourlyTimestamps.length >= config.GLOBAL_MAX_RPH)
+    return { allowed: false, error: "서버 시간당 요청 한도 초과" };
   if (globalState.dailyTimestamps.length >= config.GLOBAL_MAX_RPD)
     return { allowed: false, error: "서버 일일 요청 한도 초과" };
 
@@ -75,6 +84,7 @@ export function checkRateLimits(
   if (!userState.has(arcaId)) {
     userState.set(arcaId, {
       timestamps: [],
+      hourlyTimestamps: [],
       dailyTimestamps: [],
       activeRequests: 0,
       modelRequests: new Map(),
@@ -82,6 +92,7 @@ export function checkRateLimits(
   }
   const uState = userState.get(arcaId)!;
   uState.timestamps = uState.timestamps.filter((t) => t > oneMinuteAgo);
+  uState.hourlyTimestamps = uState.hourlyTimestamps.filter((t) => t > oneHourAgo);
   uState.dailyTimestamps = uState.dailyTimestamps.filter((t) => t > oneDayAgo);
 
   // User Check
@@ -89,6 +100,8 @@ export function checkRateLimits(
     return { allowed: false, error: "유저 동시 요청 한도 초과" };
   if (uState.timestamps.length >= config.USER_MAX_RPM)
     return { allowed: false, error: "유저 분당 요청 한도 초과" };
+  if (uState.hourlyTimestamps.length >= config.USER_MAX_RPH)
+    return { allowed: false, error: "유저 시간당 요청 한도 초과" };
   if (uState.dailyTimestamps.length >= config.USER_MAX_RPD)
     return { allowed: false, error: "유저 일일 요청 한도 초과" };
 
@@ -99,6 +112,7 @@ export function recordRequestStart(arcaId: string, modelId: string) {
   const now = Date.now();
   globalState.activeRequests++;
   globalState.timestamps.push(now);
+  globalState.hourlyTimestamps.push(now);
   globalState.dailyTimestamps.push(now);
   globalState.modelRequests.set(
     modelId,
@@ -109,6 +123,7 @@ export function recordRequestStart(arcaId: string, modelId: string) {
   if (uState) {
     uState.activeRequests++;
     uState.timestamps.push(now);
+    uState.hourlyTimestamps.push(now);
     uState.dailyTimestamps.push(now);
   }
 }
