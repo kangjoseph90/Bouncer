@@ -42,7 +42,7 @@ interface CacheEntry {
 }
 
 let serverStatsCache: CacheEntry | null = null;
-let serverUsageCache: CacheEntry | null = null;
+const serverUsageCache = new Map<string, CacheEntry>();
 let topUsersCache: CacheEntry | null = null;
 
 // 유저별 통계 캐시
@@ -103,18 +103,21 @@ statsRoutes.get("/server", (c) => {
   return c.json({ success: true, data, lastUpdatedAt: now });
 });
 
-// 서버 전체 그래프 데이터 (최근 7일)
+// 서버 전체 그래프 데이터
 statsRoutes.get("/server/usage", (c) => {
+  const res = c.req.query("res") || "1h";
   const now = Date.now();
-  if (serverUsageCache && now - serverUsageCache.lastUpdatedAt < CACHE_TTL_MS) {
-    return c.json({ success: true, data: serverUsageCache.data, lastUpdatedAt: serverUsageCache.lastUpdatedAt });
+  const cached = serverUsageCache.get(res);
+  if (cached && now - cached.lastUpdatedAt < CACHE_TTL_MS) {
+    return c.json({ success: true, data: cached.data, lastUpdatedAt: cached.lastUpdatedAt });
   }
 
-  const daily = getServerDailyUsage(7);
-  const byModel = getServerUsageByModel(7);
+  const daily = getServerDailyUsage(res);
+  const days = res === '5m' ? 1 : res === '1h' ? 3 : 7;
+  const byModel = getServerUsageByModel(days);
 
   const data = { daily, byModel };
-  serverUsageCache = { data, lastUpdatedAt: now };
+  serverUsageCache.set(res, { data, lastUpdatedAt: now });
 
   return c.json({ success: true, data, lastUpdatedAt: now });
 });
@@ -135,22 +138,25 @@ statsRoutes.get("/user/usage", (c) => {
     return c.json({ success: false, error: "유효하지 않거나 정지된 계정입니다." }, 401);
   }
 
+  const res = c.req.query("res") || "1h";
   const now = Date.now();
-  const cached = userUsageCache.get(user.arca_id);
+  const cacheKey = `${user.arca_id}:${res}`;
+  const cached = userUsageCache.get(cacheKey);
   if (cached && now - cached.lastUpdatedAt < CACHE_TTL_MS) {
     return c.json({ success: true, data: cached.data, lastUpdatedAt: cached.lastUpdatedAt });
   }
 
-  const daily = getUserDailyUsage(user.arca_id, 7);
-  const byModel = getUserUsageByModel(user.arca_id, 7);
+  const daily = getUserDailyUsage(user.arca_id, res);
+  const days = res === '5m' ? 1 : res === '1h' ? 3 : 7;
+  const byModel = getUserUsageByModel(user.arca_id, days);
   const recentLogs = getUserRecentLogs(user.arca_id, 20);
 
-  // 전체 누적 합산 (7일 데이터 기반)
+  // 전체 누적 합산 기반 (daily 응답 기준)
   const totalRequests = daily.reduce((s, d) => s + d.total_requests, 0);
   const totalCost = daily.reduce((s, d) => s + d.total_cost, 0);
 
   const data = { daily, byModel, recentLogs, totals: { totalRequests, totalCost } };
-  userUsageCache.set(user.arca_id, { data, lastUpdatedAt: now });
+  userUsageCache.set(cacheKey, { data, lastUpdatedAt: now });
 
   return c.json({ success: true, data, lastUpdatedAt: now });
 });
@@ -185,18 +191,20 @@ adminStatsRoutes.get("/top-users", (c) => {
 // 특정 유저 상세 통계 (최근 7일)
 adminStatsRoutes.get("/user/:arcaId", (c) => {
   const arcaId = c.req.param("arcaId");
+  const res = c.req.query("res") || "1h";
   if (!arcaId) {
     return c.json({ success: false, error: "arcaId가 지정되지 않았습니다." }, 400);
   }
 
   const now = Date.now();
-  const cached = adminUserDetailCache.get(arcaId);
+  const cacheKey = `${arcaId}:${res}`;
+  const cached = adminUserDetailCache.get(cacheKey);
   if (cached && now - cached.lastUpdatedAt < CACHE_TTL_MS) {
     return c.json({ success: true, data: cached.data, lastUpdatedAt: cached.lastUpdatedAt });
   }
 
-  const stats = getUserDetailStats(arcaId, 7);
-  adminUserDetailCache.set(arcaId, { data: stats, lastUpdatedAt: now });
+  const stats = getUserDetailStats(arcaId, res);
+  adminUserDetailCache.set(cacheKey, { data: stats, lastUpdatedAt: now });
 
   return c.json({ success: true, data: stats, lastUpdatedAt: now });
 });
