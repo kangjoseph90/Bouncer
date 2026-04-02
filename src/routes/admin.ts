@@ -7,6 +7,7 @@ import {
   adminUnsuspendUser,
 } from "../db/queries";
 import { config, loadModels, reloadEnvConfig } from "../utils/config";
+import { clearStatsCache } from "./stats";
 
 export const adminRoutes = new Hono<{ Variables: { isAdmin: boolean } }>();
 
@@ -91,6 +92,7 @@ adminRoutes.post("/models/reload", (c) => {
 adminRoutes.post("/env/reload", (c) => {
   try {
     reloadEnvConfig();
+    clearStatsCache();
     return c.json({
       success: true,
       message: ".env 설정을 런타임에 성공적으로 최신화했습니다.",
