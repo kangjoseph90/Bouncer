@@ -9,6 +9,7 @@ import {
   getTopUsersByCost,
   getUserDetailStats,
   getServerStats,
+  getResolutionConfig,
 } from "../db/queries";
 import { getUserByApiKey } from "../db/queries";
 import { config, modelsRegistry } from "../utils/config";
@@ -113,7 +114,7 @@ statsRoutes.get("/server/usage", (c) => {
   }
 
   const daily = getServerDailyUsage(res);
-  const days = res === '5m' ? 1 : res === '1h' ? 3 : 7;
+  const { days } = getResolutionConfig(res);
   const byModel = getServerUsageByModel(days);
 
   const data = { daily, byModel };
@@ -147,7 +148,7 @@ statsRoutes.get("/user/usage", (c) => {
   }
 
   const daily = getUserDailyUsage(user.arca_id, res);
-  const days = res === '5m' ? 1 : res === '1h' ? 3 : 7;
+  const { days } = getResolutionConfig(res);
   const byModel = getUserUsageByModel(user.arca_id, days);
   const recentLogs = getUserRecentLogs(user.arca_id, 20);
 
