@@ -615,3 +615,17 @@ export function adminUnsuspendUser(arcaId: string) {
     $arca_id: arcaId,
   });
 }
+export function adminRevokeKey(arcaId: string) {
+  const db = getDB();
+  // 'active' 상태인 유저의 키만 파기할 수 있도록 함 (이미 정지되었거나 파기된 경우 제외)
+  db.query(
+    `
+    UPDATE users 
+    SET status = 'revoked', api_key_hash = $random_hash 
+    WHERE arca_id = $arca_id AND status = 'active'
+  `,
+  ).run({
+    $arca_id: arcaId,
+    $random_hash: "revoked-" + Date.now(),
+  });
+}

@@ -172,6 +172,9 @@ button:disabled {
 .btn-success {
   background: var(--success);
 }
+.btn-warning {
+  background: var(--warning);
+}
 input[type="text"],
 input[type="password"] {
   width: 100%;
