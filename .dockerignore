@@ -1,0 +1,16 @@
+node_modules
+.git
+.github
+crawl_samples
+dist
+
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+.env
+models.json
+cloudflared.exe
+
+.DS_Store
+Thumbs.db

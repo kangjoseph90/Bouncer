@@ -5,7 +5,10 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/index.ts"
+    "start": "bun run src/index.ts",
+    "release:patch": "npm version patch -m \"release: v%s\" && git push && git push --tags",
+    "release:minor": "npm version minor -m \"release: v%s\" && git push && git push --tags",
+    "release:major": "npm version major -m \"release: v%s\" && git push && git push --tags"
   },
   "dependencies": {
     "cheerio": "^1.0.0",
