@@ -1,5 +1,5 @@
 # 1. Base image (Bun)
-FROM oven/bun:latest-slim AS base
+FROM oven/bun:slim AS base
 WORKDIR /app
 
 # 2. 의존성 설치
