@@ -5,6 +5,7 @@ import {
   adminSearchUser,
   adminSuspendUser,
   adminUnsuspendUser,
+  adminRevokeKey,
 } from "../db/queries";
 import { config, loadModels, reloadEnvConfig } from "../utils/config";
 import { clearStatsCache } from "./stats";
@@ -156,6 +157,30 @@ adminRoutes.post("/users/:arcaId/unsuspend", (c) => {
   } catch (e) {
     return c.json(
       { success: false, error: "정지 해제 처리 중 에러가 발생했습니다." },
+      500,
+    );
+  }
+});
+
+// 7. 유저 관리: API 키만 파기(Revoke)
+adminRoutes.post("/users/:arcaId/revoke", (c) => {
+  const arcaId = c.req.param("arcaId");
+  if (!arcaId) {
+    return c.json(
+      { success: false, error: "대상이 지정되지 않았습니다." },
+      400,
+    );
+  }
+
+  try {
+    adminRevokeKey(arcaId);
+    return c.json({
+      success: true,
+      message: `${arcaId} 유저의 현재 API 키가 파기되었습니다. 사용자는 다시 키를 발급받을 수 있습니다.`,
+    });
+  } catch (e) {
+    return c.json(
+      { success: false, error: "키 파기 처리 중 에러가 발생했습니다." },
       500,
     );
   }

@@ -815,8 +815,11 @@ async function searchUser() {
             <button class="btn-sm" onclick="toggleUserStats('${u.arca_id}', this)" style="background:var(--accent)">통계</button>
             ${
               u.status === "suspended"
-                ? `<button class="btn-sm btn-success" onclick="unsuspendUser('${u.arca_id}')">해제</button>`
-                : `<button class="btn-sm btn-danger" onclick="suspendUser('${u.arca_id}')">정지</button>`
+                ? `<button class="btn-sm btn-success" onclick="unsuspendUser('${u.arca_id}')">정지 해제</button>`
+                : `
+                  <button class="btn-sm btn-danger" onclick="suspendUser('${u.arca_id}')">영구 정지</button>
+                  ${u.status === "active" ? `<button class="btn-sm btn-warning" onclick="revokeUserKey('${u.arca_id}')">키 파기</button>` : ""}
+                `
             }
           </div>
         </div>
@@ -955,6 +958,27 @@ async function unsuspendUser(arcaId) {
   if (!confirm(`[${arcaId}] 정지를 해제하시겠습니까?`)) return;
   try {
     const res = await fetch(`/api/admin/users/${arcaId}/unsuspend`, {
+      method: "POST",
+      headers: { Authorization: `Admin ${currentAdminPw}` },
+    });
+    const body = await res.json();
+    alert(body.message || body.error);
+    searchUser();
+    fetchTopUsers();
+  } catch (e) {
+    alert("처리 실패");
+  }
+}
+
+async function revokeUserKey(arcaId) {
+  if (
+    !confirm(
+      `[${arcaId}] 해당 사용자의 현재 API 키를 파기하시겠습니까?\n사용자는 다시 키를 발급받아야 AI를 이용할 수 있게 됩니다.`,
+    )
+  )
+    return;
+  try {
+    const res = await fetch(`/api/admin/users/${arcaId}/revoke`, {
       method: "POST",
       headers: { Authorization: `Admin ${currentAdminPw}` },
     });
