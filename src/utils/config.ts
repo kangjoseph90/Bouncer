@@ -1,10 +1,17 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as crypto from "crypto";
+
+// ADMIN_PASSWORD를 해시해서 저장 (메모리에는 해시만 존재)
+function hashPassword(password: string): string {
+  if (!password) return "";
+  return crypto.createHash("sha256").update(password).digest("hex");
+}
 
 export const config = {
   // Server
   PORT: parseInt(process.env.PORT || "3000", 10),
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "",
+  ADMIN_PASSWORD_HASH: hashPassword(process.env.ADMIN_PASSWORD || ""),
 
   // Crawler (활성 유저 조건)
   ALLOW_HALF_NICK: process.env.ALLOW_HALF_NICK !== "false", // 기본: true (반고닉 허용)
@@ -209,7 +216,7 @@ export function reloadEnvConfig() {
       }
     });
 
-    config.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+    config.ADMIN_PASSWORD_HASH = hashPassword(process.env.ADMIN_PASSWORD || "");
     config.ALLOW_HALF_NICK = process.env.ALLOW_HALF_NICK !== "false";
     config.MIN_ACTIVE_DAYS = process.env.MIN_ACTIVE_DAYS
       ? parseInt(process.env.MIN_ACTIVE_DAYS, 10)

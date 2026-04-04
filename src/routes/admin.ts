@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import * as crypto from "crypto";
 import {
   getSetting,
   setSetting,
@@ -17,8 +18,8 @@ adminRoutes.use("/*", async (c, next) => {
   const authHeader = c.req.header("Authorization") || "";
   const tokenMatched = authHeader.match(/^Admin\s+(.+)$/);
 
-  // config.ADMIN_PASSWORD가 설정되어 있지 않으면 관리자 기능 전면 비활성화 (보안)
-  if (!config.ADMIN_PASSWORD) {
+  // config.ADMIN_PASSWORD_HASH가 설정되어 있지 않으면 관리자 기능 전면 비활성화 (보안)
+  if (!config.ADMIN_PASSWORD_HASH) {
     return c.json(
       {
         success: false,
@@ -29,7 +30,9 @@ adminRoutes.use("/*", async (c, next) => {
     );
   }
 
-  if (!tokenMatched || tokenMatched[1] !== config.ADMIN_PASSWORD) {
+  // 입력받은 비밀번호를 해시해서 저장된 해시와 비교
+  const inputHash = crypto.createHash("sha256").update(tokenMatched?.[1] || "").digest("hex");
+  if (!tokenMatched || inputHash !== config.ADMIN_PASSWORD_HASH) {
     return c.json(
       { success: false, error: "관리자 비밀번호가 일치하지 않습니다." },
       401,
