@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import * as crypto from "crypto";
 import {
   getServerDailyUsage,
   getServerUsageByModel,
@@ -181,7 +182,9 @@ export const adminStatsRoutes = new Hono();
 adminStatsRoutes.use("/*", async (c, next) => {
   const authHeader = c.req.header("Authorization") || "";
   const tokenMatched = authHeader.match(/^Admin\s+(.+)$/);
-  if (!config.ADMIN_PASSWORD || !tokenMatched || tokenMatched[1] !== config.ADMIN_PASSWORD) {
+
+  const inputHash = crypto.createHash("sha256").update(tokenMatched?.[1] || "").digest("hex");
+  if (!config.ADMIN_PASSWORD_HASH || !tokenMatched || inputHash !== config.ADMIN_PASSWORD_HASH) {
     return c.json({ success: false, error: "관리자 인증이 필요합니다." }, 401);
   }
   await next();
