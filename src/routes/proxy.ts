@@ -128,7 +128,7 @@ proxyRoutes.post("/v1/chat/completions", async (c) => {
     return c.json(
       {
         error: {
-          message: `해당 연결된 다중 모델 혹은 단일 모델('${modelConfig.targetModel || modelId}')은 서버에 API 키(${modelConfig.targetKeyEnv})가 설정되지 않아 현재 비활성화되어 있습니다.`,
+          message: `요청한 모델('${modelId}')은 현재 비활성화되어 있습니다.`,
           type: "server_configuration_error",
         },
       },
@@ -161,7 +161,7 @@ proxyRoutes.post("/v1/chat/completions", async (c) => {
     return c.json(
       {
         error: {
-          message: `Handler '${modelConfig.handler}' not found for model ${modelId}`,
+          message: `요청한 모델('${modelId}')에 대한 핸들러를 찾을 수 없습니다.`,
           type: "server_error",
         },
       },
