@@ -691,3 +691,32 @@ export function getSuspendedUsers() {
     created_at: number;
   }[];
 }
+
+// 10. 어드민: 개별 유저 크레딧 충전/차감
+export function adminAddCredit(arcaId: string, amount: number): { newBalance: number } | null {
+  const db = getDB();
+  const result = db
+    .query(
+      `
+      UPDATE users
+      SET credit_balance = credit_balance + $amount
+      WHERE arca_id = $arca_id
+      RETURNING credit_balance
+    `,
+    )
+    .get({ $arca_id: arcaId, $amount: amount }) as { credit_balance: number } | undefined;
+
+  return result ? { newBalance: result.credit_balance } : null;
+}
+
+// 11. 어드민: 서버 전역 사용량 리셋
+export function adminResetGlobalQuota(): void {
+  const db = getDB();
+  db.query(
+    `
+      UPDATE server_usage
+      SET total_used = 0, last_refilled_at = $now
+      WHERE id = 1
+    `,
+  ).run({ $now: Date.now() });
+}

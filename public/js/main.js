@@ -814,6 +814,7 @@ async function searchUser() {
           </div>
           <div style="display:flex;gap:6px">
             <button class="btn-sm" onclick="toggleUserStats('${u.arca_id}', this)" style="background:var(--accent)">통계</button>
+            <button class="btn-sm" onclick="addCreditToUser('${u.arca_id}')" style="background:var(--muted)">크레딧</button>
             ${
               u.status === "suspended"
                 ? `<button class="btn-sm btn-success" onclick="unsuspendUser('${u.arca_id}')">정지 해제</button>`
@@ -987,6 +988,51 @@ async function revokeUserKey(arcaId) {
     alert(body.message || body.error);
     searchUser();
     fetchTopUsers();
+  } catch (e) {
+    alert("처리 실패");
+  }
+}
+
+async function addCreditToUser(arcaId) {
+  const input = prompt(`[${arcaId}] 충전할 크레딧 금액을 입력하세요.\n(음수 입력 시 차감)`);
+  if (input === null) return;
+
+  const amount = parseInt(input, 10);
+  if (isNaN(amount) || amount === 0) {
+    alert("올바른 숫자를 입력해주세요.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/admin/users/${arcaId}/credit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Admin ${currentAdminPw}`,
+      },
+      body: JSON.stringify({ amount }),
+    });
+    const body = await res.json();
+    alert(body.message || body.error);
+    if (body.success) {
+      searchUser();
+      fetchTopUsers();
+    }
+  } catch (e) {
+    alert("처리 실패");
+  }
+}
+
+async function resetGlobalQuota() {
+  if (!confirm("서버 전역 사용량을 0으로 리셋하시겠습니까?")) return;
+
+  try {
+    const res = await fetch("/api/admin/quota/reset", {
+      method: "POST",
+      headers: { Authorization: `Admin ${currentAdminPw}` },
+    });
+    const body = await res.json();
+    alert(body.message || body.error);
   } catch (e) {
     alert("처리 실패");
   }
