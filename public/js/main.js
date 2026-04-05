@@ -683,6 +683,7 @@ async function fetchAdminPanel() {
       document.getElementById("admin-login").classList.add("hidden");
       document.getElementById("admin-dashboard").classList.remove("hidden");
       fetchTopUsers();
+      fetchAdminLists();
     } else {
       alert("인증 실패: " + body.error);
       logoutAdmin();
@@ -989,4 +990,104 @@ async function revokeUserKey(arcaId) {
   } catch (e) {
     alert("처리 실패");
   }
+}
+
+async function fetchAdminLists() {
+  const whitelistDiv = document.getElementById("whitelist-container");
+  const bannedDiv = document.getElementById("banned-container");
+  
+  try {
+    const res = await fetch("/api/admin/users/lists", {
+      headers: { Authorization: `Admin ${currentAdminPw}` }
+    });
+    const body = await res.json();
+    
+    if (!body.success) {
+      whitelistDiv.innerHTML = '<div style="text-align:center; color: var(--danger); padding: 20px;">로드 실패</div>';
+      bannedDiv.innerHTML = '<div style="text-align:center; color: var(--danger); padding: 20px;">로드 실패</div>';
+      return;
+    }
+
+    const { whitelist, suspended } = body.data;
+
+    if (whitelist.length === 0) {
+      whitelistDiv.innerHTML = '<div style="text-align:center; color: var(--muted); padding: 20px;">화이트리스트 유저가 없습니다.</div>';
+    } else {
+      whitelistDiv.innerHTML = whitelist.map(u => {
+        const p = getArcaProfile(u.arca_id, u.display_name);
+        return `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 6px 0; border-bottom: 1px solid var(--border)">
+            <div><a href="${p.url}" target="_blank" class="arca-link">${p.text}</a></div>
+            <button class="btn-sm btn-danger" onclick="removeWhitelist('${u.arca_id}')">명단 제외</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    if (suspended.length === 0) {
+      bannedDiv.innerHTML = '<div style="text-align:center; color: var(--muted); padding: 20px;">차단된 유저가 없습니다.</div>';
+    } else {
+      bannedDiv.innerHTML = suspended.map(u => {
+        const p = getArcaProfile(u.arca_id, u.display_name);
+        return `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 6px 0; border-bottom: 1px solid var(--border)">
+            <div><a href="${p.url}" target="_blank" class="arca-link">${p.text}</a></div>
+            <button class="btn-sm btn-success" onclick="unsuspendUserFromList('${u.arca_id}')">정지 해제</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+  } catch (e) {
+    whitelistDiv.innerHTML = '<div style="text-align:center; color: var(--danger); padding: 20px;">통신 오류</div>';
+    bannedDiv.innerHTML = '<div style="text-align:center; color: var(--danger); padding: 20px;">통신 오류</div>';
+  }
+}
+
+async function addWhitelist() {
+  const urlInput = document.getElementById("admin-whitelist-url").value.trim();
+  if (!urlInput) {
+    alert("URL을 입력해주세요.");
+    return;
+  }
+  try {
+    const res = await fetch("/api/admin/whitelist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Admin ${currentAdminPw}` },
+      body: JSON.stringify({ url: urlInput })
+    });
+    const body = await res.json();
+    if (body.success) {
+      document.getElementById("admin-whitelist-url").value = "";
+      alert(body.message);
+      fetchAdminLists();
+    } else {
+      alert("등록 실패: " + body.error);
+    }
+  } catch (e) {
+    alert("통신 오류");
+  }
+}
+
+async function removeWhitelist(arcaId) {
+  if (!confirm(`정말로 [${arcaId}] 님을 화이트리스트에서 제외하시겠습니까?`)) return;
+  try {
+    const res = await fetch(`/api/admin/whitelist/${arcaId}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Admin ${currentAdminPw}` }
+    });
+    const body = await res.json();
+    if (body.success) {
+      fetchAdminLists();
+    } else {
+      alert("삭제 실패: " + body.error);
+    }
+  } catch (e) {
+    alert("통신 오류");
+  }
+}
+
+async function unsuspendUserFromList(arcaId) {
+  await unsuspendUser(arcaId);
+  fetchAdminLists(); // Reload lists
 }

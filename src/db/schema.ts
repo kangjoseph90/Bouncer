@@ -56,6 +56,15 @@ export function initDB() {
     )
   `);
 
+  // 화이트리스트 테이블
+  db.run(`
+    CREATE TABLE IF NOT EXISTS whitelist (
+      arca_id TEXT PRIMARY KEY,
+      display_name TEXT,
+      created_at INTEGER NOT NULL
+    )
+  `);
+
   // WAL 모드 활성화로 동시성 성능 향상
   db.run("PRAGMA journal_mode = WAL;");
 

@@ -7,9 +7,14 @@ import {
   adminSuspendUser,
   adminUnsuspendUser,
   adminRevokeKey,
+  getWhitelistUsers,
+  getSuspendedUsers,
+  addWhitelist,
+  removeWhitelist,
 } from "../db/queries";
 import { config, loadModels, reloadEnvConfig } from "../utils/config";
 import { clearStatsCache } from "./stats";
+import { parseArcaIdFromHref } from "../services/crawler";
 
 export const adminRoutes = new Hono<{ Variables: { isAdmin: boolean } }>();
 
@@ -186,5 +191,67 @@ adminRoutes.post("/users/:arcaId/revoke", (c) => {
       { success: false, error: "키 파기 처리 중 에러가 발생했습니다." },
       500,
     );
+  }
+});
+
+// 8. 명단 관리: 화이트리스트 및 밴 명단 조회
+adminRoutes.get("/users/lists", (c) => {
+  try {
+    const whitelist = getWhitelistUsers();
+    const suspended = getSuspendedUsers();
+    return c.json({ success: true, data: { whitelist, suspended } });
+  } catch (e) {
+    return c.json({ success: false, error: "명단 조회 중 에러가 발생했습니다." }, 500);
+  }
+});
+
+// 9. 명단 관리: 화이트리스트 추가
+adminRoutes.post("/whitelist", async (c) => {
+  try {
+    const { url } = await c.req.json<{ url: string }>();
+    if (!url) {
+      return c.json({ success: false, error: "URL이 제공되지 않았습니다." }, 400);
+    }
+    
+    // 프로필 URL에서 arcaId 추출 (예: https://arca.live/u/@nickname/12345)
+    // URL만 입력하기도 하고, 직접 arcaId 형식을 입력하기도 하므로 분기 처리
+    let targetArcaId = url.trim();
+    let displayName = targetArcaId;
+    
+    if (url.includes("arca.live/u/@")) {
+      const parsed = parseArcaIdFromHref(url);
+      if (!parsed) {
+        return c.json({ success: false, error: "올바른 아카라이브 프로필 URL이 아닙니다." }, 400);
+      }
+      targetArcaId = parsed.arcaId;
+      displayName = parsed.displayName || targetArcaId;
+    } else {
+      // URL이 아니고 arcaId나 닉네임인 경우의 예외 처리 (원하는 대로)
+      // 예: fixed_닉네임, half_12345
+      if (!targetArcaId.startsWith("fixed_") && !targetArcaId.startsWith("half_")) {
+        // 그냥 닉네임만 쓴 경우 기본적으로 fixed_ 취급
+        targetArcaId = "fixed_" + targetArcaId;
+      }
+    }
+
+    addWhitelist(targetArcaId, displayName);
+    return c.json({ success: true, message: `${displayName} 님이 화이트리스트에 추가되었습니다.` });
+  } catch (e) {
+    return c.json({ success: false, error: "화이트리스트 추가 중 에러가 발생했습니다." }, 500);
+  }
+});
+
+// 10. 명단 관리: 화이트리스트에서 삭제
+adminRoutes.delete("/whitelist/:arcaId", (c) => {
+  const arcaId = c.req.param("arcaId");
+  if (!arcaId) {
+    return c.json({ success: false, error: "대상이 지정되지 않았습니다." }, 400);
+  }
+
+  try {
+    removeWhitelist(arcaId);
+    return c.json({ success: true, message: "화이트리스트에서 제외되었습니다." });
+  } catch (e) {
+    return c.json({ success: false, error: "화이트리스트 삭제 중 에러가 발생했습니다." }, 500);
   }
 });

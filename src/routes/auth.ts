@@ -13,6 +13,7 @@ import {
   revokeAndReissue,
   getSetting,
   getUserCounts,
+  isWhitelisted,
 } from "../db/queries";
 
 export const authRoutes = new Hono();
@@ -127,28 +128,34 @@ authRoutes.post("/verify", async (c) => {
         config.MIN_CHANNEL_POSTS !== Infinity);
 
     if (hasProfileChecks) {
-      try {
-        // profileData.arcaId에서 원래 href 복원
-        const profileHref =
-          profileData.type === "half"
-            ? `/u/@${encodeURIComponent(profileData.displayName || "")}/${profileData.arcaId.replace("half_", "")}`
-            : `/u/@${encodeURIComponent(profileData.displayName || "")}`;
+      if (isWhitelisted(profileData.arcaId)) {
+        console.log(
+          `[auth] Whitelist user bypassed validation: ${profileData.arcaId}`,
+        );
+      } else {
+        try {
+          // profileData.arcaId에서 원래 href 복원
+          const profileHref =
+            profileData.type === "half"
+              ? `/u/@${encodeURIComponent(profileData.displayName || "")}/${profileData.arcaId.replace("half_", "")}`
+              : `/u/@${encodeURIComponent(profileData.displayName || "")}`;
 
-        const validation = await validateProfileActivity(profileHref);
-        if (!validation.passed) {
+          const validation = await validateProfileActivity(profileHref);
+          if (!validation.passed) {
+            return c.json(
+              {
+                success: false,
+                error: `활동 조건 미달: ${validation.reason}`,
+              },
+              403,
+            );
+          }
+        } catch (e: any) {
           return c.json(
-            {
-              success: false,
-              error: `활동 조건 미달: ${validation.reason}`,
-            },
-            403,
+            { success: false, error: e.message || "프로필 검증 중 오류" },
+            500,
           );
         }
-      } catch (e: any) {
-        return c.json(
-          { success: false, error: e.message || "프로필 검증 중 오류" },
-          500,
-        );
       }
     }
 
