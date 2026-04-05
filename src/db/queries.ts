@@ -167,7 +167,7 @@ export function getUserByApiKey(rawApiKey: string) {
 
   if (user && user.status === "active") {
     const refilled = checkAndRefillQuota(user.arca_id, user.last_refilled_at);
-    
+
     // 갱신된 경우에만 최신 크레딧 잔액을 위해 다시 조회
     if (refilled) {
       return db
@@ -185,7 +185,7 @@ export function getUserByApiKey(rawApiKey: string) {
       arca_id: user.arca_id,
       display_name: user.display_name,
       credit_balance: user.credit_balance,
-      status: user.status
+      status: user.status,
     };
   }
 
@@ -313,21 +313,24 @@ export function getResolutionConfig(resolution: string | undefined) {
   let days = 30;
   let groupExpr = "date(created_at / 1000, 'unixepoch', 'localtime')";
 
-  if (resolution === '1h') {
+  if (resolution === "1h") {
     days = 2;
-    groupExpr = "datetime((created_at / 1000 / 3600) * 3600, 'unixepoch', 'localtime')";
-  } else if (resolution === '15m') {
+    groupExpr =
+      "datetime((created_at / 1000 / 3600) * 3600, 'unixepoch', 'localtime')";
+  } else if (resolution === "15m") {
     days = 0.5; // 12시간
-    groupExpr = "datetime((created_at / 1000 / 900) * 900, 'unixepoch', 'localtime')";
-  } else if (resolution === '5m') {
+    groupExpr =
+      "datetime((created_at / 1000 / 900) * 900, 'unixepoch', 'localtime')";
+  } else if (resolution === "5m") {
     days = 4 / 24; // 4시간
-    groupExpr = "datetime((created_at / 1000 / 300) * 300, 'unixepoch', 'localtime')";
+    groupExpr =
+      "datetime((created_at / 1000 / 300) * 300, 'unixepoch', 'localtime')";
   }
   return { days, groupExpr };
 }
 
 // 서버 전체 사용량 (해상도 지원)
-export function getServerDailyUsage(resolution: string = '1d') {
+export function getServerDailyUsage(resolution: string = "1d") {
   const db = getDB();
   const { days, groupExpr } = getResolutionConfig(resolution);
   const since = Date.now() - days * 24 * 60 * 60 * 1000;
@@ -392,7 +395,7 @@ export function getGlobalQuotaStatus() {
 }
 
 // 개인 일별 사용량 (해상도 지원)
-export function getUserDailyUsage(arcaId: string, resolution: string = '1d') {
+export function getUserDailyUsage(arcaId: string, resolution: string = "1d") {
   const db = getDB();
   const { days, groupExpr } = getResolutionConfig(resolution);
   const since = Date.now() - days * 24 * 60 * 60 * 1000;
@@ -503,7 +506,7 @@ export function getTopUsersByCost(days: number = 7, limit: number = 10) {
 }
 
 // 어드민: 특정 유저 상세 사용 통계
-export function getUserDetailStats(arcaId: string, resolution: string = '1d') {
+export function getUserDetailStats(arcaId: string, resolution: string = "1d") {
   const daily = getUserDailyUsage(arcaId, resolution);
   const { days } = getResolutionConfig(resolution);
   const byModel = getUserUsageByModel(arcaId, days);
@@ -603,7 +606,7 @@ export function adminSuspendUser(arcaId: string) {
 
 export function adminUnsuspendUser(arcaId: string) {
   const db = getDB();
-  // 정지된 유저를 'revoked' 상태로 복구. 
+  // 정지된 유저를 'revoked' 상태로 복구.
   // 키가 없는 상태이므로 revoked가 더 적절하며, 이후 유저가 인증을 통해 새 키를 발급받으면 active로 전환됨.
   db.query(
     `
@@ -628,4 +631,63 @@ export function adminRevokeKey(arcaId: string) {
     $arca_id: arcaId,
     $random_hash: "revoked-" + Date.now(),
   });
+}
+
+// 9. 화이트리스트 & 밴 명단 조회 및 관리
+export function isWhitelisted(arcaId: string): boolean {
+  const db = getDB();
+  const row = db
+    .query(`SELECT arca_id FROM whitelist WHERE arca_id = $arca_id`)
+    .get({ $arca_id: arcaId });
+  return !!row;
+}
+
+export function addWhitelist(arcaId: string, displayName: string) {
+  const db = getDB();
+  db.query(
+    `
+    INSERT INTO whitelist (arca_id, display_name, created_at)
+    VALUES ($arca_id, $display_name, $now)
+    ON CONFLICT(arca_id) DO UPDATE SET display_name = excluded.display_name
+    `,
+  ).run({
+    $arca_id: arcaId,
+    $display_name: displayName,
+    $now: Date.now(),
+  });
+}
+
+export function removeWhitelist(arcaId: string) {
+  const db = getDB();
+  db.query(`DELETE FROM whitelist WHERE arca_id = $arca_id`).run({
+    $arca_id: arcaId,
+  });
+}
+
+export function getWhitelistUsers() {
+  const db = getDB();
+  return db
+    .query(
+      `SELECT arca_id, display_name, created_at FROM whitelist ORDER BY created_at DESC`,
+    )
+    .all() as { arca_id: string; display_name: string; created_at: number }[];
+}
+
+export function getSuspendedUsers() {
+  const db = getDB();
+  return db
+    .query(
+      `
+      SELECT arca_id, display_name, credit_balance, created_at 
+      FROM users 
+      WHERE status = 'suspended' 
+      ORDER BY created_at DESC
+    `,
+    )
+    .all() as {
+    arca_id: string;
+    display_name: string;
+    credit_balance: number;
+    created_at: number;
+  }[];
 }

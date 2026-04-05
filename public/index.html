@@ -737,6 +737,86 @@
           <div id="admin-user-results" style="margin-top: 14px"></div>
         </div>
 
+        <div class="card">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 14px;
+            "
+          >
+            <h2 style="margin: 0; padding: 0; border: none">유저 명단 관리</h2>
+            <button onclick="fetchAdminLists()" class="btn-sm btn-secondary">
+              새로고침
+            </button>
+          </div>
+
+          <div style="margin-bottom: 20px">
+            <div class="section-label">화이트리스트 추가</div>
+            <div class="flex-row">
+              <input
+                type="text"
+                id="admin-whitelist-url"
+                placeholder="아카라이브 프로필 URL (예: https://arca.live/u/@닉네임/1234)"
+                style="margin-top: 0; flex: 1"
+                onkeydown="if (event.key === 'Enter') addWhitelist();"
+              />
+              <button
+                onclick="addWhitelist()"
+                style="width: 70px; margin-top: 0; padding: 11px"
+              >
+                추가
+              </button>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div>
+              <div class="section-label">화이트리스트 유저</div>
+              <div
+                style="
+                  min-height: 150px;
+                  border: 1px solid var(--border);
+                  border-radius: 6px;
+                  padding: 10px;
+                  background: var(--bg);
+                  max-height: 300px;
+                  overflow-y: auto;
+                "
+                id="whitelist-container"
+              >
+                <div
+                  style="text-align: center; color: var(--muted); padding: 20px"
+                >
+                  로딩 중...
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="section-label">영구 정지 유저</div>
+              <div
+                style="
+                  min-height: 150px;
+                  border: 1px solid var(--border);
+                  border-radius: 6px;
+                  padding: 10px;
+                  background: var(--bg);
+                  max-height: 300px;
+                  overflow-y: auto;
+                "
+                id="banned-container"
+              >
+                <div
+                  style="text-align: center; color: var(--muted); padding: 20px"
+                >
+                  로딩 중...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div
           class="card"
           style="
