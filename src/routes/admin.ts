@@ -11,6 +11,9 @@ import {
   getSuspendedUsers,
   addWhitelist,
   removeWhitelist,
+  adminAddCredit,
+  adminResetGlobalQuota,
+  getGlobalQuotaStatus,
 } from "../db/queries";
 import { config, loadModels, reloadEnvConfig } from "../utils/config";
 import { clearStatsCache } from "./stats";
@@ -253,5 +256,66 @@ adminRoutes.delete("/whitelist/:arcaId", (c) => {
     return c.json({ success: true, message: "화이트리스트에서 제외되었습니다." });
   } catch (e) {
     return c.json({ success: false, error: "화이트리스트 삭제 중 에러가 발생했습니다." }, 500);
+  }
+});
+
+// 11. 유저 크레딧 충전/차감
+adminRoutes.post("/users/:arcaId/credit", async (c) => {
+  const arcaId = c.req.param("arcaId");
+  if (!arcaId) {
+    return c.json({ success: false, error: "대상이 지정되지 않았습니다." }, 400);
+  }
+
+  try {
+    const { amount } = await c.req.json<{ amount: number }>();
+    if (typeof amount !== "number" || isNaN(amount)) {
+      return c.json({ success: false, error: "올바른 amount 값이 필요합니다." }, 400);
+    }
+
+    const result = adminAddCredit(arcaId, amount);
+    if (!result) {
+      return c.json({ success: false, error: "해당 유저를 찾을 수 없습니다." }, 404);
+    }
+
+    const action = amount >= 0 ? "충전" : "차감";
+    return c.json({
+      success: true,
+      message: `${arcaId} 유저에게 ${Math.abs(amount)} 크레딧이 ${action}되었습니다.`,
+      newBalance: result.newBalance,
+    });
+  } catch (e) {
+    return c.json({ success: false, error: "크레딧 조정 중 에러가 발생했습니다." }, 500);
+  }
+});
+
+// 12. 서버 전역 사용량 리셋
+adminRoutes.post("/quota/reset", (c) => {
+  try {
+    adminResetGlobalQuota();
+    return c.json({
+      success: true,
+      message: "서버 전역 사용량이 0으로 리셋되었습니다.",
+    });
+  } catch (e) {
+    return c.json({ success: false, error: "사용량 리셋 중 에러가 발생했습니다." }, 500);
+  }
+});
+
+// 13. 서버 전역 사용량 조회
+adminRoutes.get("/quota", (c) => {
+  try {
+    const status = getGlobalQuotaStatus();
+    if (!status) {
+      return c.json({ success: false, error: "사용량 정보를 찾을 수 없습니다." }, 404);
+    }
+    return c.json({
+      success: true,
+      data: {
+        totalUsed: status.total_used,
+        lastRefilledAt: status.last_refilled_at,
+      },
+    });
+  } catch (e) {
+    return c.json({ success: false, error: "사용량 조회 중 에러가 발생했습니다." }, 500);
   }
 });
