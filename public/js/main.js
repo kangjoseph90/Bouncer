@@ -12,6 +12,16 @@ let currentSvModel = [];
 let adminUserState = {};
 
 // ── 유틸 ────────────────────────────────────────────────────────
+function escapeHTML(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function fmtNum(n) {
   return typeof n === "number" ? n.toLocaleString() : "-";
 }
@@ -32,18 +42,18 @@ function getArcaProfile(arcaId, displayName) {
   if (arcaId.startsWith("fixed_")) {
     const nm = displayName || arcaId.replace("fixed_", "");
     return {
-      text: `@${nm}`,
+      text: `@${escapeHTML(nm)}`,
       url: `https://arca.live/u/@${encodeURIComponent(nm)}`,
     };
   }
   if (arcaId.startsWith("half_")) {
     const num = arcaId.replace("half_", "");
     return {
-      text: `@${displayName}#${num}`,
+      text: `@${escapeHTML(displayName)}#${escapeHTML(num)}`,
       url: `https://arca.live/u/@${encodeURIComponent(displayName)}/${num}`,
     };
   }
-  return { text: arcaId, url: "#" };
+  return { text: escapeHTML(arcaId), url: "#" };
 }
 
 function getTimeRangeText(res) {
@@ -357,7 +367,7 @@ async function fetchDashboardContent() {
         } else {
           recentLogs.forEach((l) => {
             const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${fmtDate(l.created_at)}</td><td>${limitStr(l.model_name, 18)}</td><td>${fmtNum(l.tokens_prompt)}</td><td>${fmtNum(l.tokens_completion)}</td><td>${fmtNum(l.tokens_cached)}</td><td><strong>${fmtNum(l.cost)}</strong></td>`;
+            tr.innerHTML = `<td>${fmtDate(l.created_at)}</td><td>${escapeHTML(limitStr(l.model_name, 18))}</td><td>${fmtNum(l.tokens_prompt)}</td><td>${fmtNum(l.tokens_completion)}</td><td>${fmtNum(l.tokens_cached)}</td><td><strong>${fmtNum(l.cost)}</strong></td>`;
             tbody.appendChild(tr);
           });
         }
@@ -720,7 +730,7 @@ async function fetchTopUsers() {
       tr.innerHTML = `
         <td style="font-weight:700;color:var(--muted)">${i + 1}</td>
         <td><a href="${p.url}" target="_blank" class="arca-link">${p.text}</a></td>
-        <td><span class="badge badge-${u.status}">${u.status}</span></td>
+        <td><span class="badge badge-${escapeHTML(u.status)}">${escapeHTML(u.status)}</span></td>
         <td>${fmtNum(u.total_requests)}건</td>
         <td><strong>${fmtNum(u.total_cost)}</strong></td>
         <td>${fmtNum(u.credit_balance)}</td>`;
@@ -810,26 +820,26 @@ async function searchUser() {
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
           <div>
             <a href="${p.url}" target="_blank" class="arca-link">${p.text}</a>
-            <span class="badge badge-${u.status}" style="margin-left:6px">${u.status}</span>
+            <span class="badge badge-${escapeHTML(u.status)}" style="margin-left:6px">${escapeHTML(u.status)}</span>
           </div>
           <div style="display:flex;gap:6px">
-            <button class="btn-sm" onclick="toggleUserStats('${u.arca_id}', this)" style="background:var(--accent)">통계</button>
-            <button class="btn-sm" onclick="addCreditToUser('${u.arca_id}')" style="background:var(--muted)">크레딧</button>
+            <button class="btn-sm" onclick="toggleUserStats('${escapeHTML(u.arca_id)}', this)" style="background:var(--accent)">통계</button>
+            <button class="btn-sm" onclick="addCreditToUser('${escapeHTML(u.arca_id)}')" style="background:var(--muted)">크레딧</button>
             ${
               u.status === "suspended"
-                ? `<button class="btn-sm btn-success" onclick="unsuspendUser('${u.arca_id}')">정지 해제</button>`
+                ? `<button class="btn-sm btn-success" onclick="unsuspendUser('${escapeHTML(u.arca_id)}')">정지 해제</button>`
                 : `
-                  <button class="btn-sm btn-danger" onclick="suspendUser('${u.arca_id}')">영구 정지</button>
-                  ${u.status === "active" ? `<button class="btn-sm btn-warning" onclick="revokeUserKey('${u.arca_id}')">키 파기</button>` : ""}
+                  <button class="btn-sm btn-danger" onclick="suspendUser('${escapeHTML(u.arca_id)}')">영구 정지</button>
+                  ${u.status === "active" ? `<button class="btn-sm btn-warning" onclick="revokeUserKey('${escapeHTML(u.arca_id)}')">키 파기</button>` : ""}
                 `
             }
           </div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-top:6px">
           <div>잔여 크레딧: <strong>${fmtNum(u.credit_balance)}</strong> | 최근 사용: ${u.last_used_at ? fmtDate(u.last_used_at) : "없음"}</div>
-          <div id="stats-time-${u.arca_id}" style="font-size:12px"></div>
+          <div id="stats-time-${escapeHTML(u.arca_id)}" style="font-size:12px"></div>
         </div>
-        <div id="stats-panel-${u.arca_id}" class="hidden" style="margin-top:12px"></div>`;
+        <div id="stats-panel-${escapeHTML(u.arca_id)}" class="hidden" style="margin-top:12px"></div>`;
       cont.appendChild(div);
     });
   } catch (e) {
@@ -924,7 +934,7 @@ async function toggleUserStats(arcaId, btn) {
     } else
       recentLogs.slice(0, 10).forEach((l) => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${fmtDate(l.created_at)}</td><td>${limitStr(l.model_name, 18)}</td><td>${fmtNum(l.tokens_prompt)}</td><td>${fmtNum(l.tokens_completion)}</td><td><strong>${fmtNum(l.cost)}</strong></td>`;
+        tr.innerHTML = `<td>${fmtDate(l.created_at)}</td><td>${escapeHTML(limitStr(l.model_name, 18))}</td><td>${fmtNum(l.tokens_prompt)}</td><td>${fmtNum(l.tokens_completion)}</td><td><strong>${fmtNum(l.cost)}</strong></td>`;
         tbody.appendChild(tr);
       });
   } catch (e) {
@@ -1064,7 +1074,7 @@ async function fetchAdminLists() {
         return `
           <div style="display:flex; justify-content:space-between; align-items:center; padding: 6px 0; border-bottom: 1px solid var(--border)">
             <div><a href="${p.url}" target="_blank" class="arca-link">${p.text}</a></div>
-            <button class="btn-sm btn-danger" onclick="removeWhitelist('${u.arca_id}')">명단 제외</button>
+            <button class="btn-sm btn-danger" onclick="removeWhitelist('${escapeHTML(u.arca_id)}')">명단 제외</button>
           </div>
         `;
       }).join("");
@@ -1078,7 +1088,7 @@ async function fetchAdminLists() {
         return `
           <div style="display:flex; justify-content:space-between; align-items:center; padding: 6px 0; border-bottom: 1px solid var(--border)">
             <div><a href="${p.url}" target="_blank" class="arca-link">${p.text}</a></div>
-            <button class="btn-sm btn-success" onclick="unsuspendUserFromList('${u.arca_id}')">정지 해제</button>
+            <button class="btn-sm btn-success" onclick="unsuspendUserFromList('${escapeHTML(u.arca_id)}')">정지 해제</button>
           </div>
         `;
       }).join("");
